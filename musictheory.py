@@ -1,14 +1,66 @@
+class PitchClass(object):
+
+    def __init__(self, pitch_class_str):
+        assert 1 <= len(pitch_class_str) <= 3
+        self.__pc = pitch_class_str.replace('b', '♭').replace('#', '♯')
+
+class Pitch(object):
+
+    def __init__(self, pitch_class_str):
+        self.__pitchclass = None
+        self.__octave = None
+
 class Interval(object):
 
     def __init__(self, quality, number):
-        assert quality in ("P", "M", "m", "A", "d")
+        assert quality in ('P', 'M', 'm', 'A', 'd')
         self.__quality = quality
-        assert number in range(1, 9)
         self.__number = number
+
+    @property
+    def quality(self):
+        return self.__quality
+
+    @property
+    def number(self):
+        return self.__number
+
+    @property
+    def semitones(self):
+        number = self.__number
+        semitones = 0
+        # Reduce to a simple interval
+        while (number > 8):
+            number -= 8
+            semitones += 12
+
+        # Reduce to a major or perfect interval
+        if self.__quality == 'A':
+            semitones += 1
+        elif self.__quality == 'm':
+            semitones -= 1
+        elif self.__quality == 'd' and self.__number not in (4, 5, 8):
+            semitones -= 2 # one to get to minor, one more to get to major
+        elif self.__quality == 'd' and self.__number in (4, 5, 8):
+            semitones -= 1
+
+        # Handle major/perfect interval
+        perfect_major_to_semitones = {1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11}
+        semitones += perfect_major_to_semitones[number]
+
+        return semitones
+
+    def __eq__(self, other):
+        return self.quality == other.quality and self.number == other.number
+
+    def inversion(self):
         pass
 
-    def semitones(self):
+    def enharmonic_equivalent(self):
         pass
+
+    def is_enharmonic_to(self, other):
+        return self.semitones == other.semitones
 
     def __add__(self):
         pass
@@ -33,6 +85,12 @@ class Chord(object):
         self.__quality = quality
         assert inversion in [0, 1, 2, 3]
         self.__inversion = inversion
+
+    def __eq__(self, other):
+        pass
+
+    def __str__(self):
+        pass
 
     def four_voice_realizations(self, key):
         pass
