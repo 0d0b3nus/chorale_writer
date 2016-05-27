@@ -1,8 +1,11 @@
+from functools import total_ordering
+
 class PitchClass(object):
 
     def __init__(self, pitch_class_str):
         assert 1 <= len(pitch_class_str) <= 3
         self.__pc = pitch_class_str.replace('b', '♭').replace('#', '♯')
+
 
 class Pitch(object):
 
@@ -10,6 +13,8 @@ class Pitch(object):
         self.__pitchclass = None
         self.__octave = None
 
+
+@total_ordering
 class Interval(object):
 
     def __init__(self, quality, number):
@@ -45,13 +50,29 @@ class Interval(object):
             semitones -= 1
 
         # Handle major/perfect interval
-        perfect_major_to_semitones = {1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11}
+        perfect_major_to_semitones = {1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9,
+                7: 11, 8: 12}
         semitones += perfect_major_to_semitones[number]
 
         return semitones
 
     def __eq__(self, other):
         return self.quality == other.quality and self.number == other.number
+
+    def __lt__(self, other):
+        if self.number < other.number:
+            return True
+        else:
+            return self.semitones < other.semitones
+
+    def __add__(self):
+        pass
+
+    def __iadd__(self):
+        pass
+
+    def __str__(self):
+        return "{}{}".format(self.quality, self.number)
 
     def inversion(self):
         pass
@@ -61,12 +82,6 @@ class Interval(object):
 
     def is_enharmonic_to(self, other):
         return self.semitones == other.semitones
-
-    def __add__(self):
-        pass
-
-    def __iadd__(self):
-        pass
 
 
 class Key(object):
@@ -86,8 +101,22 @@ class Chord(object):
         assert inversion in [0, 1, 2, 3]
         self.__inversion = inversion
 
+    @property
+    def scale_degree(self):
+        return self.__scale_degree
+
+    @property
+    def quality(self):
+        return self.__quality
+
+    @property
+    def inversion(self):
+        return self.__inversion
+
     def __eq__(self, other):
-        pass
+        return self.scale_degree == other.scale_degree and \
+            self.quality == other.quality and \
+            self.inversion == other.inversion
 
     def __str__(self):
         pass
