@@ -23,8 +23,8 @@ class TestIntervals(unittest.TestCase):
         minor_third = Interval('m', 3)
         self.assertEqual(str(minor_third), "m3")
 
-        major_eleventh = Interval('M', 11)
-        self.assertEqual(str(major_eleventh), "M11")
+        major_tenth = Interval('M', 10)
+        self.assertEqual(str(major_tenth), "M10")
 
         augmented_seventh = Interval('A', 7)
         self.assertEqual(str(augmented_seventh), "A7")
@@ -45,8 +45,8 @@ class TestIntervals(unittest.TestCase):
         diminished_sixth = Interval('d', 6)
         self.assertEqual(diminished_sixth.semitones, 7)
 
-        major_eleventh = Interval('M', 11)
-        self.assertEqual(major_eleventh.semitones, 16)
+        major_tenth = Interval('M', 10)
+        self.assertEqual(major_tenth.semitones, 16)
 
     def test_add(self):
         pass
@@ -59,6 +59,46 @@ class TestIntervals(unittest.TestCase):
         self.assertTrue(perfect_fifth >= diminished_fifth)
         self.assertTrue(perfect_fifth >= diminished_fifth)
         self.assertTrue(perfect_fifth >= perfect_fifth)
+
+    def test_inversion(self):
+        perfect_unison = Interval('P', 1)
+        perfect_octave = Interval('P', 8)
+        self.assertEqual(perfect_octave.inversion(), perfect_unison)
+
+        # inversion of a compound interval is the inversion of the simple part
+        major_tenth = Interval('M', 10)
+        major_third = Interval('M', 3)
+        self.assertEqual(major_tenth.inversion(), major_third.inversion())
+
+        augmented_fourth = Interval('A', 4)
+        diminished_fifth = Interval('d', 5)
+        self.assertEqual(diminished_fifth.inversion(), augmented_fourth)
+
+    def test_enharmonic(self):
+        augmented_fourth = Interval('A', 4)
+        diminished_fifth = Interval('d', 5)
+        self.assertTrue(augmented_fourth.is_enharmonic_to(diminished_fifth))
+        self.assertEqual(diminished_fifth.enharmonic_equivalent(),
+                         augmented_fourth)
+
+        major_tenth = Interval('M', 10)
+        pass
+
+        major_third = Interval('M', 3)
+        self.assertEqual(major_third.enharmonic_equivalent(), None)
+
+    def test_simple_part_and_is_compound(self):
+        perfect_octave = Interval('P', 8)
+        major_tenth = Interval('M', 10)
+        major_third = Interval('M', 3)
+
+        self.assertEqual(major_tenth.simple_part(), major_third)
+        self.assertTrue(major_tenth.is_compound())
+        self.assertFalse(major_third.is_compound())
+        self.assertFalse(perfect_octave.is_compound())
+
+    def test_from_string(self):
+        pass
 
 
 class TestChords(unittest.TestCase):

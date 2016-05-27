@@ -20,6 +20,7 @@ class Interval(object):
     def __init__(self, quality, number):
         assert quality in ('P', 'M', 'm', 'A', 'd')
         self.__quality = quality
+        assert not (quality in ('M', 'm') and self.__has_perfect_quality(number))
         self.__number = number
 
     @property
@@ -32,21 +33,21 @@ class Interval(object):
 
     @property
     def semitones(self):
-        number = self.__number
+        number = self.number
         semitones = 0
         # Reduce to a simple interval
-        while (number > 8):
-            number -= 8
+        while number > 8:
+            number -= 7
             semitones += 12
 
         # Reduce to a major or perfect interval
-        if self.__quality == 'A':
+        if self.quality == 'A':
             semitones += 1
-        elif self.__quality == 'm':
+        elif self.quality == 'm':
             semitones -= 1
-        elif self.__quality == 'd' and self.__number not in (4, 5, 8):
+        elif self.quality == 'd' and not self.__has_perfect_quality(number):
             semitones -= 2 # one to get to minor, one more to get to major
-        elif self.__quality == 'd' and self.__number in (4, 5, 8):
+        elif self.quality == 'd' and self.__has_perfect_quality(number):
             semitones -= 1
 
         # Handle major/perfect interval
@@ -65,23 +66,57 @@ class Interval(object):
         else:
             return self.semitones < other.semitones
 
-    def __add__(self):
+    def __add__(self, other):
         pass
 
-    def __iadd__(self):
+    def __iadd__(self, other):
         pass
 
     def __str__(self):
         return "{}{}".format(self.quality, self.number)
 
     def inversion(self):
-        pass
+        if self.is_compound():
+            return self.simple_part().inversion()
+
+        inverted_number = 9 - self.number
+        inverted_quality = {'M': 'm', 'm': 'M', 'P': 'P', 'A': 'd', 'd': 'A'}
+        return type(self)(inverted_quality[self.quality], inverted_number)
 
     def enharmonic_equivalent(self):
-        pass
+        number = self.number
+        quality = self.quality
+
+        if quality == 'A':
+            return type(self)('d', number+1)
+        elif quality == 'd':
+            return type(self)('A', number-1)
+        return None
 
     def is_enharmonic_to(self, other):
         return self.semitones == other.semitones
+
+    def is_compound(self):
+        return self.number > 8
+
+    def simple_part(self):
+        """ Returns the simple part of a compound interval """
+        number = self.number
+        quality = self.quality
+        number = number % 7 if number > 8 else number
+        return type(self)(quality, number)
+
+    @classmethod
+    def from_str(cls, string):
+        pass
+
+    @staticmethod
+    def __has_perfect_quality(number):
+        """ Returns whether number corresponds to potentially perfect interval
+
+        i.e. a 1, 4 or 5 + octaves
+        """
+        return number % 7 in [1, 4, 5]
 
 
 class Key(object):
@@ -122,14 +157,14 @@ class Chord(object):
         pass
 
     def four_voice_realizations(self, key):
+        """ Returns a list of realizations of the chord as 4 pitch classes
+
+        We can get multiple results because we may have choice which pitch to
+        double. The doublings are in descending order of appropriateness for
+        voice leading. First pitch is always the root, rest are arbitrary.
+
+        """
         pass
-    """ Returns a list of realizations of the chord as 4 pitch classes
-
-    We can get multiple results because we may have choice which pitch to
-    double. The doublings are in descending order of appropriateness for
-    voice leading. The first pitch is always the root, the rest are arbitrary.
-
-    """
 
 
 class ChordProgression(object):
