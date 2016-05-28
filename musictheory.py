@@ -67,15 +67,26 @@ class Interval(object):
             return self.semitones < other.semitones
 
     def __add__(self, other):
-        pass
+        new_number = self.number + other.number - 1
+        new_semitones = self.semitones + other.semitones
 
-    def __iadd__(self, other):
-        pass
+        if self.__has_perfect_quality(new_number):
+            for quality in ('d', 'P', 'A'):
+                candidate_interval = Interval(quality, new_number)
+                if new_semitones == candidate_interval.semitones:
+                    return candidate_interval
+        else:
+            for quality in ('d', 'm', 'M', 'A'):
+                candidate_interval = Interval(quality, new_number)
+                if new_semitones == candidate_interval.semitones:
+                    return candidate_interval
+        assert False, "{} or {} are invalid intervals".format(self, other)
 
     def __str__(self):
         return "{}{}".format(self.quality, self.number)
 
     def inversion(self):
+        """ Returns the inversion of the interval. """
         if self.is_compound():
             return self.simple_part().inversion()
 
@@ -84,6 +95,10 @@ class Interval(object):
         return type(self)(inverted_quality[self.quality], inverted_number)
 
     def enharmonic_equivalent(self):
+        """ Returns the enharmonic equivalent of interval, if it exists.
+
+        Returns none otherwise.
+        """
         number = self.number
         quality = self.quality
 
@@ -94,13 +109,19 @@ class Interval(object):
         return None
 
     def is_enharmonic_to(self, other):
+        """ Determines if interval is enharmonically equivalent to another. """
         return self.semitones == other.semitones
 
     def is_compound(self):
-        return self.number > 8
+        """ Determines if the interval is a compound interval.
+
+        DBEND: We take the convention that all intervals STRICTLY bigger than
+        perfect octaves are compound.
+        """
+        return self > Interval('P', 8)
 
     def simple_part(self):
-        """ Returns the simple part of a compound interval """
+        """ Returns the simple part of a compound interval. """
         number = self.number
         quality = self.quality
         number = number % 7 if number > 8 else number
@@ -114,7 +135,7 @@ class Interval(object):
     def __has_perfect_quality(number):
         """ Returns whether number corresponds to potentially perfect interval
 
-        i.e. a 1, 4 or 5 + octaves
+        i.e. a 1, 4 or 5 + octaves.
         """
         return number % 7 in [1, 4, 5]
 

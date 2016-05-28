@@ -49,7 +49,19 @@ class TestIntervals(unittest.TestCase):
         self.assertEqual(major_tenth.semitones, 16)
 
     def test_add(self):
-        pass
+        diminished_fifth = Interval('d', 5)
+        augmented_fourth = Interval('A', 4)
+        perfect_octave = Interval('P', 8)
+        self.assertEqual(diminished_fifth + augmented_fourth, perfect_octave)
+
+        major_tenth = Interval('M', 10)
+        chord = Interval('M', 3)
+        chord += perfect_octave
+        self.assertEqual(chord, major_tenth)
+
+        major_third = Interval('M', 3)
+        augmented_fifth = Interval('A', 5)
+        self.assertEqual(major_third + major_third, augmented_fifth)
 
     def test_cmp(self):
         perfect_fifth = Interval('P', 5)
@@ -60,12 +72,15 @@ class TestIntervals(unittest.TestCase):
         self.assertTrue(perfect_fifth >= diminished_fifth)
         self.assertTrue(perfect_fifth >= perfect_fifth)
 
+        # Check strictness.
+        self.assertFalse(perfect_fifth > perfect_fifth)
+
     def test_inversion(self):
         perfect_unison = Interval('P', 1)
         perfect_octave = Interval('P', 8)
         self.assertEqual(perfect_octave.inversion(), perfect_unison)
 
-        # inversion of a compound interval is the inversion of the simple part
+        # Inversion of a compound interval is the inversion of the simple part.
         major_tenth = Interval('M', 10)
         major_third = Interval('M', 3)
         self.assertEqual(major_tenth.inversion(), major_third.inversion())
@@ -96,6 +111,10 @@ class TestIntervals(unittest.TestCase):
         self.assertTrue(major_tenth.is_compound())
         self.assertFalse(major_third.is_compound())
         self.assertFalse(perfect_octave.is_compound())
+
+        # Augmented octaves are compound.
+        augmented_octave = Interval('A', 8)
+        self.assertTrue(augmented_octave.is_compound())
 
     def test_from_string(self):
         pass
