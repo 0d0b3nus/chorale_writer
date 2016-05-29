@@ -6,12 +6,57 @@ class PitchClass(object):
         assert 1 <= len(pitch_class_str) <= 3
         self.__pc = pitch_class_str.replace('b', '♭').replace('#', '♯')
 
+    def __str__(self):
+        pass
 
+    def __eq__(self):
+        pass
+
+    def enharmonic_equivalent(self):
+        pass
+
+    def is_enharmonic_to(self, other):
+        pass
+
+
+@total_ordering
 class Pitch(object):
 
-    def __init__(self, pitch_class_str):
-        self.__pitchclass = None
-        self.__octave = None
+    def __init__(self, pitch_class, octave):
+        self.__pitch_class = pitch_class
+        self.__octave = octave
+
+    @property
+    def pitch_class(self):
+        return self.__pitch_class
+
+    @property
+    def octave(self):
+        return self.__octave
+
+    def interval_between(self, other):
+        pass
+
+    def __add__(self, other):
+        assert isinstance(other, Interval), \
+                "Can only add intervals to pitches."
+        pass
+
+    def __eq__(self, other):
+        return self.pitch_class == other.pitch_class and \
+            self.octave == self.octave
+
+    def __lt__(self, other):
+        pass
+
+    def __str__(self):
+        pass
+
+    def enharmonic_equivalent(self):
+        pass
+
+    def is_enharmonic_to(self, other):
+        pass
 
 
 @total_ordering
@@ -52,7 +97,7 @@ class Interval(object):
 
         # Handle major/perfect interval
         perfect_major_to_semitones = {1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9,
-                7: 11, 8: 12}
+                                      7: 11, 8: 12}
         semitones += perfect_major_to_semitones[number]
 
         return semitones
@@ -82,6 +127,18 @@ class Interval(object):
                     return candidate_interval
         assert False, "{} or {} are invalid intervals".format(self, other)
 
+    def __mul__(self, multiplicand):
+        assert isinstance(multiplicand, int) and multiplicand >= 0, \
+                "can only multiply by a nonnegative integer"
+        result = Interval('P', 1)
+        while multiplicand > 0:
+            result += self
+            multiplicand -= 1
+        return result
+
+    def __rmul__(self, multiplicand):
+        return self.__mul__(multiplicand)
+
     def __str__(self):
         return "{}{}".format(self.quality, self.number)
 
@@ -92,7 +149,7 @@ class Interval(object):
 
         inverted_number = 9 - self.number
         inverted_quality = {'M': 'm', 'm': 'M', 'P': 'P', 'A': 'd', 'd': 'A'}
-        return type(self)(inverted_quality[self.quality], inverted_number)
+        return Interval(inverted_quality[self.quality], inverted_number)
 
     def enharmonic_equivalent(self):
         """ Returns the enharmonic equivalent of interval, if it exists.
@@ -103,9 +160,9 @@ class Interval(object):
         quality = self.quality
 
         if quality == 'A':
-            return type(self)('d', number+1)
+            return Interval('d', number+1)
         elif quality == 'd':
-            return type(self)('A', number-1)
+            return Interval('A', number-1)
         return None
 
     def is_enharmonic_to(self, other):
@@ -125,7 +182,7 @@ class Interval(object):
         number = self.number
         quality = self.quality
         number = number % 7 if number > 8 else number
-        return type(self)(quality, number)
+        return Interval(quality, number)
 
     @classmethod
     def from_str(cls, string):

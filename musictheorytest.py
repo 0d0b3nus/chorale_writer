@@ -63,6 +63,15 @@ class TestIntervals(unittest.TestCase):
         augmented_fifth = Interval('A', 5)
         self.assertEqual(major_third + major_third, augmented_fifth)
 
+    def test_mult(self):
+        perfect_union = Interval('P', 1)
+        diminished_fifth = Interval('d', 5)
+        diminished_ninth = Interval('d', 9)
+
+        self.assertEqual(diminished_fifth * 0, perfect_union)
+        self.assertEqual(diminished_fifth * 2, diminished_ninth)
+        self.assertEqual(2 * diminished_fifth, diminished_ninth)
+
     def test_cmp(self):
         perfect_fifth = Interval('P', 5)
         diminished_fifth = Interval('d', 5)
