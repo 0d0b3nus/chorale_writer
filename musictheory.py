@@ -1,15 +1,16 @@
 from functools import total_ordering
 
+@total_ordering
 class PitchClass(object):
 
     def __init__(self, letter, sharps=0, flats=0):
         if not 0 <= sharps <= 2 or not 0 <= flats <= 2:
             raise ValueError('No. of sharps/flats has to be between 0 and 2.')
-        if sharps != 0 and flats !=0:
-            raise ValueError('Cannot have sharps and flats.')
+        if sharps != 0 and flats != 0:
+            raise ValueError('Cannot have both sharps and flats.')
         if letter.upper() not in (chr(n) for n in range(ord('A'), ord('G')+1)):
             raise ValueError("Letter has to be a character "
-            "between 'A' and 'G'")
+                             "between 'A' and 'G'")
         self.__letter = letter.upper()
         self.__sharps = sharps
         self.__flats = flats
@@ -26,30 +27,92 @@ class PitchClass(object):
     def flats(self):
         return self.__flats
 
+    @property
+    def class_number(self):
+        for class_number, equivalence_class in enumerate(equivalence_classes):
+            if self in equivalence_class:
+                return class_number
+
     def __str__(self):
-        string = self.letter
-        sharps_dict = {0: '', 1: '♯', 2: '♯♯'}
-        flats_dict = {0: '', 1: '♭', 2: '♭♭'}
-        string += sharps_dict[self.sharps] + flats_dict[self.flats]
-        return string
+        return self.letter + ('♯'*self.sharps) + ('♭'*self.flats)
 
     def __eq__(self, other):
         return self.letter == other.letter and self.sharps == other.sharps \
                 and self.flats == other.flats
 
+    def __lt__(self, other):
+        if self.class_number < other.class_number:
+            return True
+        elif self.class_number > other.class_number:
+            return False
+        else:
+            return other.letter in (
+                self.next_letter(self.letter),
+                self.next_letter(self.next_letter(self.letter))
+            )
+
     def enharmonic_equivalents(self):
-        pass
+        for equivalence_class in equivalence_classes:
+            if self in equivalence_class:
+                return equivalence_class
 
     def is_enharmonic_to(self, other):
         return self in self.enharmonic_equivalents()
 
+    def interval_between(self, other):
+        smaller, bigger = sorted([self, other])
+        number = letter_classes.index(bigger.letter) \
+                - letter_classes.index(smaller.letter) + 1
+        semitones = bigger.class_number - smaller.class_number
+        return Interval.from_number_and_semitones(number, semitones)
+
+    @classmethod
+    def from_str(cls, string):
+        pass
+
     @staticmethod
-    def __prev_letter(letter):
+    def prev_letter(letter):
         return chr(ord(letter) - 1) if letter != 'A' else 'G'
 
     @staticmethod
-    def __next_letter(letter):
+    def next_letter(letter):
         return chr(ord(letter) + 1) if letter != 'G' else 'A'
+
+
+# FIXME: Ugly as hell
+letter_classes = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
+equivalence_classes = []
+for letter in letter_classes:
+    if letter in ('B', 'E'):
+        equivalence_classes.append([
+            PitchClass(PitchClass.prev_letter(letter), sharps=2),
+            PitchClass(letter),
+            PitchClass(PitchClass.next_letter(letter), flats=1)
+        ])
+    elif letter in ('C', 'F'):
+        # white key
+        equivalence_classes.append([
+            PitchClass(PitchClass.prev_letter(letter), sharps=1),
+            PitchClass(letter),
+            PitchClass(PitchClass.next_letter(letter), flats=2)
+        ])
+        # black key
+        equivalence_classes.append([
+            PitchClass(letter, sharps=1),
+            PitchClass(PitchClass.next_letter(letter), flats=1)
+        ])
+    else:
+        # white key
+        equivalence_classes.append([
+            PitchClass(PitchClass.prev_letter(letter), sharps=2),
+            PitchClass(letter),
+            PitchClass(PitchClass.next_letter(letter), flats=2)
+        ])
+        # black key
+        equivalence_classes.append([
+            PitchClass(letter, sharps=1),
+            PitchClass(PitchClass.next_letter(letter), flats=1)
+        ])
 
 
 @total_ordering
@@ -98,10 +161,12 @@ class Interval(object):
     def __init__(self, quality, number):
         valid_qualities = ('P', 'M', 'm', 'A', 'd')
         if quality not in valid_qualities:
-            raise ValueError('Quality neds to be one of {}'.valid_qualities)
+            raise ValueError('Quality neds to be one of '
+                             '{}'.format(valid_qualities))
         self.__quality = quality
-        if (quality in ('M', 'm') and self.__has_perfect_quality(number)):
-            raise ValueError('{} does not have major/minor quality.')
+        if quality in ('M', 'm') and self.__has_perfect_quality(number):
+            raise ValueError('{} does not have major/minor '
+                             'quality.'.format(number))
         self.__number = number
 
     @property
@@ -151,17 +216,7 @@ class Interval(object):
         new_number = self.number + other.number - 1
         new_semitones = self.semitones + other.semitones
 
-        if self.__has_perfect_quality(new_number):
-            for quality in ('d', 'P', 'A'):
-                candidate_interval = Interval(quality, new_number)
-                if new_semitones == candidate_interval.semitones:
-                    return candidate_interval
-        else:
-            for quality in ('d', 'm', 'M', 'A'):
-                candidate_interval = Interval(quality, new_number)
-                if new_semitones == candidate_interval.semitones:
-                    return candidate_interval
-        assert False, "{} or {} are invalid intervals".format(self, other)
+        return Interval.from_number_and_semitones(new_number, new_semitones)
 
     def __mul__(self, multiplicand):
         assert isinstance(multiplicand, int) and multiplicand >= 0, \
@@ -224,6 +279,20 @@ class Interval(object):
     def from_str(cls, string):
         pass
 
+    @classmethod
+    def from_number_and_semitones(cls, number, semitones):
+        if cls.__has_perfect_quality(number):
+            for quality in ('d', 'P', 'A'):
+                candidate_interval = Interval(quality, number)
+                if semitones == candidate_interval.semitones:
+                    return candidate_interval
+        else:
+            for quality in ('d', 'm', 'M', 'A'):
+                candidate_interval = Interval(quality, number)
+                if semitones == candidate_interval.semitones:
+                    return candidate_interval
+        raise ValueError('No such interval exists.')
+
     @staticmethod
     def __has_perfect_quality(number):
         """ Returns whether number corresponds to potentially perfect interval
@@ -278,10 +347,4 @@ class Chord(object):
         voice leading. First pitch is always the root, rest are arbitrary.
 
         """
-        pass
-
-
-class ChordProgression(object):
-
-    def __init__(self):
         pass
