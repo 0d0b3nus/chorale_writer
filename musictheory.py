@@ -2,21 +2,54 @@ from functools import total_ordering
 
 class PitchClass(object):
 
-    def __init__(self, pitch_class_str):
-        assert 1 <= len(pitch_class_str) <= 3
-        self.__pc = pitch_class_str.replace('b', '♭').replace('#', '♯')
+    def __init__(self, letter, sharps=0, flats=0):
+        if not 0 <= sharps <= 2 or not 0 <= flats <= 2:
+            raise ValueError('No. of sharps/flats has to be between 0 and 2.')
+        if sharps != 0 and flats !=0:
+            raise ValueError('Cannot have sharps and flats.')
+        if letter.upper() not in (chr(n) for n in range(ord('A'), ord('G')+1)):
+            raise ValueError("Letter has to be a character "
+            "between 'A' and 'G'")
+        self.__letter = letter.upper()
+        self.__sharps = sharps
+        self.__flats = flats
+
+    @property
+    def letter(self):
+        return self.__letter
+
+    @property
+    def sharps(self):
+        return self.__sharps
+
+    @property
+    def flats(self):
+        return self.__flats
 
     def __str__(self):
-        pass
+        string = self.letter
+        sharps_dict = {0: '', 1: '♯', 2: '♯♯'}
+        flats_dict = {0: '', 1: '♭', 2: '♭♭'}
+        string += sharps_dict[self.sharps] + flats_dict[self.flats]
+        return string
 
-    def __eq__(self):
-        pass
+    def __eq__(self, other):
+        return self.letter == other.letter and self.sharps == other.sharps \
+                and self.flats == other.flats
 
-    def enharmonic_equivalent(self):
+    def enharmonic_equivalents(self):
         pass
 
     def is_enharmonic_to(self, other):
-        pass
+        return self in self.enharmonic_equivalents()
+
+    @staticmethod
+    def __prev_letter(letter):
+        return chr(ord(letter) - 1) if letter != 'A' else 'G'
+
+    @staticmethod
+    def __next_letter(letter):
+        return chr(ord(letter) + 1) if letter != 'G' else 'A'
 
 
 @total_ordering
@@ -50,7 +83,7 @@ class Pitch(object):
         pass
 
     def __str__(self):
-        pass
+        return str(self.pitch_class) + str(self.octave)
 
     def enharmonic_equivalent(self):
         pass
@@ -63,9 +96,12 @@ class Pitch(object):
 class Interval(object):
 
     def __init__(self, quality, number):
-        assert quality in ('P', 'M', 'm', 'A', 'd')
+        valid_qualities = ('P', 'M', 'm', 'A', 'd')
+        if quality not in valid_qualities:
+            raise ValueError('Quality neds to be one of {}'.valid_qualities)
         self.__quality = quality
-        assert not (quality in ('M', 'm') and self.__has_perfect_quality(number))
+        if (quality in ('M', 'm') and self.__has_perfect_quality(number)):
+            raise ValueError('{} does not have major/minor quality.')
         self.__number = number
 
     @property
