@@ -299,16 +299,16 @@ class Interval(object):
 
     @classmethod
     def from_number_and_semitones(cls, number, semitones):
+        """ Returns the interval with a given number and semitones """
         if cls.__has_perfect_quality(number):
-            for quality in ('d', 'P', 'A'):
-                candidate_interval = Interval(quality, number)
-                if semitones == candidate_interval.semitones:
-                    return candidate_interval
+            qualities = ['d', 'P', 'A']
         else:
-            for quality in ('d', 'm', 'M', 'A'):
-                candidate_interval = Interval(quality, number)
-                if semitones == candidate_interval.semitones:
-                    return candidate_interval
+            qualities = ['d', 'm', 'M', 'A']
+
+        for quality in qualities:
+            candidate_interval = Interval(quality, number)
+            if semitones == candidate_interval.semitones:
+                return candidate_interval
         raise ValueError('No such interval exists.')
 
     @staticmethod
