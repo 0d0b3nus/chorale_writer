@@ -57,7 +57,7 @@ class PitchClass(object):
                 return equivalence_class
 
     def is_enharmonic_to(self, other):
-        return self in self.enharmonic_equivalents()
+        return other in self.enharmonic_equivalents()
 
     def interval_between(self, other):
         smaller, bigger = sorted([self, other])
@@ -120,6 +120,8 @@ class Pitch(object):
 
     def __init__(self, pitch_class, octave):
         self.__pitch_class = pitch_class
+        if octave < 0 or isinstance(octave, int):
+            raise ValueError("Octave has to be a nonnegative integer.")
         self.__octave = octave
 
     @property
@@ -131,7 +133,10 @@ class Pitch(object):
         return self.__octave
 
     def interval_between(self, other):
-        pass
+        smaller, bigger = sorted(self, other)
+        octaves = bigger.octave - smaller.octave
+        return octaves * Interval('P', 8) + \
+                bigger.pitch_class.interval_between(smaller.pitch_class)
 
     def __add__(self, other):
         assert isinstance(other, Interval), \
@@ -143,7 +148,12 @@ class Pitch(object):
             self.octave == self.octave
 
     def __lt__(self, other):
-        pass
+        if self.octave < other.octave:
+            return True
+        elif self.octave > other.octave:
+            return False
+        else:
+            return self.pitch_class < other.pitch_class
 
     def __str__(self):
         return str(self.pitch_class) + str(self.octave)
@@ -152,6 +162,9 @@ class Pitch(object):
         pass
 
     def is_enharmonic_to(self, other):
+        pass
+
+    def semitones(self):
         pass
 
 
@@ -167,6 +180,11 @@ class Interval(object):
         if quality in ('M', 'm') and self.__has_perfect_quality(number):
             raise ValueError('{} does not have major/minor '
                              'quality.'.format(number))
+        elif quality == 'P' and not self.__has_perfect_quality(number):
+            raise ValueError('{} does not have perfect '
+                             'quality.'.format(number))
+        if number <= 0 or not isinstance(number, int):
+            raise ValueError('{} is not integer > 0'.format(number))
         self.__number = number
 
     @property

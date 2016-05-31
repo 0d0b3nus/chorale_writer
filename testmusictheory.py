@@ -6,20 +6,30 @@ from musictheory import *
 class TestPitchClasses(unittest.TestCase):
 
     def test_validate(self):
-        self.assertRaises(ValueError, PitchClass('H'))
-        self.assertRaises(ValueError, PitchClass('Bb'))
-        self.assertRaises(ValueError, PitchClass('C', sharps=3))
-        self.assertRaises(ValueError, PitchClass('A', flats=-1))
-        self.assertRaises(ValueError, PitchClass('C', sharps=1, flats=1))
+        with self.assertRaises(ValueError):
+            PitchClass('H')
+        with self.assertRaises(ValueError):
+            PitchClass('Bb')
+        with self.assertRaises(ValueError):
+            PitchClass('C', sharps=3)
+        with self.assertRaises(ValueError):
+            PitchClass('A', flats=-1)
+        with self.assertRaises(ValueError):
+            PitchClass('C', sharps=1, flats=1)
 
     def test_eq(self):
         self.assertEqual(PitchClass('C', sharps=1), PitchClass('C', sharps=1))
-        pass
+        self.assertNotEqual(PitchClass('C', sharps=1), PitchClass('C', flats=1))
+        self.assertNotEqual(PitchClass('B', sharps=1), PitchClass('C', flats=1))
 
     def test_cmp(self):
         pass
 
     def test_interval_between(self):
+        self.assertEqual(PitchClass('C').interval_between(PitchClass('G')), \
+                Interval('P', 5))
+        self.assertEqual(PitchClass('B').interval_between(PitchClass('D')), \
+                Interval('M', 6))
         pass
 
 class Pitch(unittest.TestCase):
@@ -28,10 +38,14 @@ class Pitch(unittest.TestCase):
 class TestIntervals(unittest.TestCase):
 
     def test_validate(self):
-        self.assertRaises(ValueError, Interval('P', 0))
-        self.assertRaises(ValueError, Interval('G', 1))
-        self.assertRaises(ValueError, Interval('M', 4))
-        self.assertRaises(ValueError, Interval('P', 6))
+        with self.assertRaises(ValueError):
+            Interval('P', 0)
+        with self.assertRaises(ValueError):
+            Interval('G', 1)
+        with self.assertRaises(ValueError):
+            Interval('M', 4)
+        with self.assertRaises(ValueError):
+            Interval('P', 6)
 
     def test_eq(self):
         self.assertEqual(Interval('P', 5), Interval('P', 5))
@@ -114,14 +128,13 @@ class TestIntervals(unittest.TestCase):
         major_tenth = Interval('M', 10)
         major_third = Interval('M', 3)
 
-        self.assertEqual(major_tenth.simple_part(), major_third)
-        self.assertTrue(major_tenth.is_compound())
-        self.assertFalse(major_third.is_compound())
-        self.assertFalse(perfect_octave.is_compound())
+        self.assertEqual(Interval('M', 10).simple_part(), Interval('M', 3))
+        self.assertTrue(Interval('M', 10).is_compound())
+        self.assertFalse(Interval('M', 3).is_compound())
+        self.assertFalse(Interval('P', 8).is_compound())
 
         # Augmented octaves are compound.
-        augmented_octave = Interval('A', 8)
-        self.assertTrue(augmented_octave.is_compound())
+        self.assertTrue(Interval('A', 8).is_compound())
 
     def test_from_string(self):
         pass
