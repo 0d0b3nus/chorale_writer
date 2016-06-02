@@ -23,17 +23,75 @@ class TestPitchClasses(unittest.TestCase):
         self.assertNotEqual(PitchClass('B', sharps=1), PitchClass('C', flats=1))
 
     def test_cmp(self):
-        pass
+        self.assertLess(PitchClass('C'), PitchClass('D'))
+        self.assertLess(PitchClass('E'), PitchClass('F', flats=1))
+        self.assertFalse(PitchClass('C') < PitchClass('C'))
+        self.assertLessEqual(PitchClass('C'), PitchClass('C'))
+        self.assertGreater(PitchClass('G'), PitchClass('C'))
 
     def test_interval_between(self):
         self.assertEqual(PitchClass('C').interval_between(PitchClass('G')), \
                 Interval('P', 5))
         self.assertEqual(PitchClass('B').interval_between(PitchClass('D')), \
                 Interval('M', 6))
+        self.assertEqual(PitchClass('C').interval_between(
+            PitchClass('C', sharps=1)), Interval('A', 1))
+
+    def test_str(self):
+        self.assertEqual(str(PitchClass('C')), 'C')
+        self.assertEqual(str(PitchClass('F', sharps=1)), 'F♯')
+        self.assertEqual(str(PitchClass('G', sharps=2)), 'G♯♯')
+        self.assertEqual(str(PitchClass('A', flats=1)), 'A♭')
+
+    def test_enharmonic(self):
         pass
 
 class Pitch(unittest.TestCase):
+
+    def test_validate(self):
         pass
+
+    def test_eq(self):
+        pass
+
+    def test_str(self):
+        pass
+
+    def test_add(self):
+        pass
+
+    def test_cmp(self):
+        pass
+
+    def test_enharmonic(self):
+        pass
+
+    def test_to_midi(self):
+        pass
+
+    def test_interval_between(self):
+        pass
+
+
+class TestIntervals(unittest.TestCase):
+
+    def test_validate(self):
+        with self.assertRaises(ValueError):
+            Interval('P', 0)
+        with self.assertRaises(ValueError):
+            Interval('G', 1)
+        with self.assertRaises(ValueError):
+            Interval('M', 4)
+        with self.assertRaises(ValueError):
+            Interval('P', 6)
+
+    def test_eq(self):
+        self.assertEqual(Interval('P', 5), Interval('P', 5))
+        self.assertNotEqual(Interval('P', 5), Interval('d', 5))
+        self.assertNotEqual(Interval('P', 5), Interval('P', 1))
+        self.assertNotEqual(Interval('d', 5), Interval('A', 4))
+
+    def test_str(self):
 
 class TestIntervals(unittest.TestCase):
 
@@ -97,31 +155,23 @@ class TestIntervals(unittest.TestCase):
         self.assertFalse(perfect_fifth > perfect_fifth)
 
     def test_inversion(self):
-        perfect_unison = Interval('P', 1)
-        perfect_octave = Interval('P', 8)
-        self.assertEqual(perfect_octave.inversion(), perfect_unison)
+        self.assertEqual(Interval('P', 8).inversion(), Interval('P', 1))
 
         # Inversion of a compound interval is the inversion of the simple part.
-        major_tenth = Interval('M', 10)
-        major_third = Interval('M', 3)
-        self.assertEqual(major_tenth.inversion(), major_third.inversion())
+        self.assertEqual(Interval('M', 10).inversion(),
+                Interval('M', 3).inversion())
 
-        augmented_fourth = Interval('A', 4)
-        diminished_fifth = Interval('d', 5)
-        self.assertEqual(diminished_fifth.inversion(), augmented_fourth)
+        self.assertEqual(Interval('d', 5).inversion(), Interval('A', 4))
 
     def test_enharmonic(self):
-        augmented_fourth = Interval('A', 4)
-        diminished_fifth = Interval('d', 5)
-        self.assertTrue(augmented_fourth.is_enharmonic_to(diminished_fifth))
-        self.assertEqual(diminished_fifth.enharmonic_equivalent(),
-                         augmented_fourth)
+        self.assertTrue(Interval('A', 4).is_enharmonic_to(Interval('d', 5)))
+        self.assertEqual(Interval('d', 5).enharmonic_equivalent(),
+            Interval('A', 4))
 
-        major_tenth = Interval('M', 10)
-        pass
+        self.assertEqual(Interval('A', 10).enharmonic_equivalent(),
+                Interval('d', 11))
 
-        major_third = Interval('M', 3)
-        self.assertEqual(major_third.enharmonic_equivalent(), None)
+        self.assertEqual(Interval('M', 3).enharmonic_equivalent(), None)
 
     def test_simple_part_and_is_compound(self):
         perfect_octave = Interval('P', 8)

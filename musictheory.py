@@ -119,10 +119,14 @@ for letter in letter_classes:
 class Pitch(object):
 
     def __init__(self, pitch_class, octave):
-        self.__pitch_class = pitch_class
-        if octave < 0 or isinstance(octave, int):
+        if isinstance(pitch_class, int):
+            self.__pitch_class = pitch_class
+        else:
+            raise ValueError("First argument has to be a PitchClass.")
+        if isinstance(octave, int):
+            self.__octave = octave
+        else:
             raise ValueError("Octave has to be a nonnegative integer.")
-        self.__octave = octave
 
     @property
     def pitch_class(self):
@@ -164,8 +168,12 @@ class Pitch(object):
     def is_enharmonic_to(self, other):
         pass
 
-    def semitones(self):
-        pass
+    def to_midi(self):
+        midi = 12 * (self.octave + 1) + self.pitch_class.class_number
+        if 0 <= midi <= 127:
+            return midi
+        else:
+            raise ValueError('Pitch is not in MIDI range (C-1 to G9)')
 
 
 @total_ordering
