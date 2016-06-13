@@ -41,15 +41,31 @@ class PitchClass(object):
                 and self.flats == other.flats
 
     def __lt__(self, other):
-        if self.class_number < other.class_number:
-            return True
-        elif self.class_number > other.class_number:
-            return False
+        if self.class_number != other.class_number:
+            return self.class_number < other.class_number
         else:
             return other.letter in (
                 self.next_letter(self.letter),
                 self.next_letter(self.next_letter(self.letter))
             )
+
+    def __add__(self, interval):
+        assert isinstance(interval, Interval), \
+            "Can only add intervals to pitch classes."
+
+        interval = interval.simple_part()
+        number = interval.number
+        new_letter = self.letter
+        while number > 1:
+            new_letter = self.next_letter(new_letter)
+            number -= 1
+
+        new_class_number = (interval.semitones + self.class_number) % 12
+        for pitch_class in equivalence_classes[new_class_number]:
+            if pitch_class.letter == new_letter:
+                return pitch_class
+        pass
+
 
     def enharmonic_equivalents(self):
         for equivalence_class in equivalence_classes:
@@ -119,14 +135,14 @@ for letter in letter_classes:
 class Pitch(object):
 
     def __init__(self, pitch_class, octave):
-        if isinstance(pitch_class, int):
+        if isinstance(pitch_class, PitchClass):
             self.__pitch_class = pitch_class
         else:
             raise ValueError("First argument has to be a PitchClass.")
         if isinstance(octave, int):
             self.__octave = octave
         else:
-            raise ValueError("Octave has to be a nonnegative integer.")
+            raise ValueError("Octave has to be an integer.")
 
     @property
     def pitch_class(self):
@@ -142,20 +158,22 @@ class Pitch(object):
         return octaves * Interval('P', 8) + \
                 bigger.pitch_class.interval_between(smaller.pitch_class)
 
-    def __add__(self, other):
-        assert isinstance(other, Interval), \
+    def __add__(self, interval):
+        assert isinstance(interval, Interval), \
                 "Can only add intervals to pitches."
-        pass
+        new_octave = self.octave + interval.octaves()
+        new_pitch_class = self.pitch_class + interval
+        if new_pitch_class < self.pitch_class:
+            new_octave += 1 # carry an octave
+        return Pitch(new_pitch_class, new_octave)
 
     def __eq__(self, other):
         return self.pitch_class == other.pitch_class and \
             self.octave == self.octave
 
     def __lt__(self, other):
-        if self.octave < other.octave:
-            return True
-        elif self.octave > other.octave:
-            return False
+        if self.octave != other.octave:
+            return self.octave < other.octave
         else:
             return self.pitch_class < other.pitch_class
 
@@ -238,9 +256,11 @@ class Interval(object):
         else:
             return self.semitones < other.semitones
 
-    def __add__(self, other):
-        new_number = self.number + other.number - 1
-        new_semitones = self.semitones + other.semitones
+    def __add__(self, interval):
+        assert isinstance(interval, Interval), \
+            "Can only add another interval to an interval"
+        new_number = self.number + interval.number - 1
+        new_semitones = self.semitones + interval.semitones
 
         return Interval.from_number_and_semitones(new_number, new_semitones)
 
@@ -293,6 +313,15 @@ class Interval(object):
         perfect octaves are compound.
         """
         return self > Interval('P', 8)
+
+    def octaves(self):
+        """ Returns the number of perfect octaves contained in interval. """
+        octaves = 0
+        interval = self
+        while interval.is_compound():
+            interval = interval - Interval('P', 8)
+            octaves += 1
+        return octaves
 
     def simple_part(self):
         """ Returns the simple part of a compound interval. """

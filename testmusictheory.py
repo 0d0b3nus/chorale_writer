@@ -37,6 +37,11 @@ class TestPitchClasses(unittest.TestCase):
         self.assertEqual(PitchClass('C').interval_between(
             PitchClass('C', sharps=1)), Interval('A', 1))
 
+    def test_add(self):
+        self.assertEqual(PitchClass('C') + Interval('P', 5), PitchClass('G'))
+        self.assertEqual(PitchClass('D') + Interval('P', 12), PitchClass('A'))
+        self.assertEqual(PitchClass('G') + Interval('d', 6), PitchClass('E', flats=2))
+
     def test_str(self):
         self.assertEqual(str(PitchClass('C')), 'C')
         self.assertEqual(str(PitchClass('F', sharps=1)), 'F♯')
@@ -44,6 +49,9 @@ class TestPitchClasses(unittest.TestCase):
         self.assertEqual(str(PitchClass('A', flats=1)), 'A♭')
 
     def test_enharmonic(self):
+        pass
+
+    def test_from_string(self):
         pass
 
 class Pitch(unittest.TestCase):
@@ -58,7 +66,12 @@ class Pitch(unittest.TestCase):
         pass
 
     def test_add(self):
-        pass
+        C, G, D, A = (PitchClass(l) for l in 'CGDA')
+        Ebb = PitchClass('E', flats=2)
+
+        self.assertEqual(Pitch(C, 3) + Interval('P', 5), Pitch(G, 3))
+        self.assertEqual(Pitch(D, 5) + Interval('P', 12), Pitch(A, 6))
+        self.assertEqual(Pitch(G, -2) + Interval('d', 6), Pitch(Ebb, -1))
 
     def test_cmp(self):
         pass
@@ -92,6 +105,7 @@ class TestIntervals(unittest.TestCase):
         self.assertNotEqual(Interval('d', 5), Interval('A', 4))
 
     def test_str(self):
+        pass
 
 class TestIntervals(unittest.TestCase):
 
