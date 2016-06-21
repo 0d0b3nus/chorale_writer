@@ -2,7 +2,6 @@ import unittest
 
 from musictheory import *
 
-
 class TestPitchClasses(unittest.TestCase):
 
     def test_validate(self):
@@ -54,7 +53,7 @@ class TestPitchClasses(unittest.TestCase):
     def test_from_string(self):
         pass
 
-class Pitch(unittest.TestCase):
+class TestPitches(unittest.TestCase):
 
     def test_validate(self):
         pass
@@ -132,11 +131,11 @@ class TestIntervals(unittest.TestCase):
         self.assertEqual(str(Interval('A', 7)), "A7")
 
     def test_semitones(self):
-        self.assertEqual(Interval('P', 5).semitones, 7)
-        self.assertEqual(Interval('d', 5).semitones, 6)
-        self.assertEqual(Interval('M', 3).semitones, 4)
-        self.assertEqual(Interval('A', 7).semitones, 12)
-        self.assertEqual(Interval('M', 10).semitones, 16)
+        self.assertEqual(Interval('P', 5).semitones(), 7)
+        self.assertEqual(Interval('d', 5).semitones(), 6)
+        self.assertEqual(Interval('M', 3).semitones(), 4)
+        self.assertEqual(Interval('A', 7).semitones(), 12)
+        self.assertEqual(Interval('M', 10).semitones(), 16)
 
     def test_add(self):
         self.assertEqual(Interval('d', 5) + Interval('A', 4), Interval('P', 8))
@@ -199,6 +198,15 @@ class TestIntervals(unittest.TestCase):
 
         # Augmented octaves are compound.
         self.assertTrue(Interval('A', 8).is_compound())
+        self.assertEqual(Interval('A', 8).simple_part(), Interval('A', 1))
+
+        self.assertEqual(Interval('d', 8).simple_part(), Interval('d', 8))
+
+    def test_octaves(self):
+        self.assertEqual(Interval('d', 8).octaves(), 0)
+        self.assertEqual(Interval('A', 8).octaves(), 1)
+        self.assertEqual(Interval('A', 15).octaves(), 2)
+        self.assertEqual(Interval('M', 14).octaves(), 1)
 
     def test_from_string(self):
         pass

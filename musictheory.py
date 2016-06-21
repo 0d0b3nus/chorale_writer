@@ -60,7 +60,7 @@ class PitchClass(object):
             new_letter = self.next_letter(new_letter)
             number -= 1
 
-        new_class_number = (interval.semitones + self.class_number) % 12
+        new_class_number = (interval.semitones() + self.class_number) % 12
         for pitch_class in equivalence_classes[new_class_number]:
             if pitch_class.letter == new_letter:
                 return pitch_class
@@ -138,11 +138,11 @@ class Pitch(object):
         if isinstance(pitch_class, PitchClass):
             self.__pitch_class = pitch_class
         else:
-            raise ValueError("First argument has to be a PitchClass.")
+            raise TypeError("First argument has to be a PitchClass.")
         if isinstance(octave, int):
             self.__octave = octave
         else:
-            raise ValueError("Octave has to be an integer.")
+            raise TypeError("Octave has to be an integer.")
 
     @property
     def pitch_class(self):
@@ -221,7 +221,6 @@ class Interval(object):
     def number(self):
         return self.__number
 
-    @property
     def semitones(self):
         number = self.number
         semitones = 0
@@ -254,13 +253,13 @@ class Interval(object):
         if self.number < other.number:
             return True
         else:
-            return self.semitones < other.semitones
+            return self.semitones() < other.semitones()
 
     def __add__(self, interval):
         assert isinstance(interval, Interval), \
             "Can only add another interval to an interval"
         new_number = self.number + interval.number - 1
-        new_semitones = self.semitones + interval.semitones
+        new_semitones = self.semitones() + interval.semitones()
 
         return Interval.from_number_and_semitones(new_number, new_semitones)
 
@@ -304,7 +303,7 @@ class Interval(object):
 
     def is_enharmonic_to(self, other):
         """ Determines if interval is enharmonically equivalent to another. """
-        return self.semitones == other.semitones
+        return self.semitones() == other.semitones()
 
     def is_compound(self):
         """ Determines if the interval is a compound interval.
@@ -319,7 +318,7 @@ class Interval(object):
         octaves = 0
         interval = self
         while interval.is_compound():
-            interval = interval - Interval('P', 8)
+            interval = Interval(interval.quality, interval.number - 7)
             octaves += 1
         return octaves
 
@@ -328,6 +327,8 @@ class Interval(object):
         number = self.number
         quality = self.quality
         number = number % 7 if number > 8 else number
+        if number == 8 and quality == 'A':
+            return Interval('A', 1)
         return Interval(quality, number)
 
     @classmethod
@@ -338,13 +339,13 @@ class Interval(object):
     def from_number_and_semitones(cls, number, semitones):
         """ Returns the interval with a given number and semitones """
         if cls.__has_perfect_quality(number):
-            qualities = ['d', 'P', 'A']
+            qualities = ('d', 'P', 'A')
         else:
-            qualities = ['d', 'm', 'M', 'A']
+            qualities = ('d', 'm', 'M', 'A')
 
         for quality in qualities:
             candidate_interval = Interval(quality, number)
-            if semitones == candidate_interval.semitones:
+            if semitones == candidate_interval.semitones():
                 return candidate_interval
         raise ValueError('No such interval exists.')
 

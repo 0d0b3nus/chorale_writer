@@ -56,9 +56,9 @@ def chunks(midi_file):
         bucket_list.append(bucket[i])
     return bucket_list
 
-files = os.listdir('corpus/')
+FILES = os.listdir('corpus/')
 
-for file_ in files:
+for file_ in FILES:
     if file_.endswith('.mid'):
         with MidiFile('corpus/' + file_) as midi_file:
             if len(midi_file.tracks) == 5:
