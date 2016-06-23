@@ -27,8 +27,8 @@ class PitchClass(object):
     def flats(self):
         return self.__flats
 
-    @property
     def class_number(self):
+        """ Returns how many semitones above the C pitch class it is. """
         for class_number, equivalence_class in enumerate(equivalence_classes):
             if self in equivalence_class:
                 return class_number
@@ -41,8 +41,8 @@ class PitchClass(object):
                 and self.flats == other.flats
 
     def __lt__(self, other):
-        if self.class_number != other.class_number:
-            return self.class_number < other.class_number
+        if self.class_number() != other.class_number():
+            return self.class_number() < other.class_number()
         else:
             return other.letter in (
                 self.next_letter(self.letter),
@@ -60,7 +60,7 @@ class PitchClass(object):
             new_letter = self.next_letter(new_letter)
             number -= 1
 
-        new_class_number = (interval.semitones() + self.class_number) % 12
+        new_class_number = (interval.semitones() + self.class_number()) % 12
         for pitch_class in equivalence_classes[new_class_number]:
             if pitch_class.letter == new_letter:
                 return pitch_class
@@ -68,9 +68,11 @@ class PitchClass(object):
 
 
     def enharmonic_equivalents(self):
+        """ Returns all pitch classes equivalent to self, except self. """
         for equivalence_class in equivalence_classes:
             if self in equivalence_class:
-                return equivalence_class
+                return [pitch_class for pitch_class in equivalence_class
+                        if pitch_class != self]
 
     def is_enharmonic_to(self, other):
         return other in self.enharmonic_equivalents()
@@ -79,7 +81,7 @@ class PitchClass(object):
         smaller, bigger = sorted([self, other])
         number = letter_classes.index(bigger.letter) \
                 - letter_classes.index(smaller.letter) + 1
-        semitones = bigger.class_number - smaller.class_number
+        semitones = bigger.class_number() - smaller.class_number()
         return Interval.from_number_and_semitones(number, semitones)
 
     @classmethod
@@ -153,6 +155,7 @@ class Pitch(object):
         return self.__octave
 
     def interval_between(self, other):
+        """ Returns the interval between this pitch and another. """
         smaller, bigger = sorted(self, other)
         octaves = bigger.octave - smaller.octave
         return octaves * Interval('P', 8) + \
@@ -181,13 +184,20 @@ class Pitch(object):
         return str(self.pitch_class) + str(self.octave)
 
     def enharmonic_equivalent(self):
+        """ Returns a list of all pitches self is enharmonic to, except self.
+        """
         pass
 
     def is_enharmonic_to(self, other):
+        """ Checks if self is enharmonicly equivalent to another pitch. """
         pass
 
     def to_midi(self):
-        midi = 12 * (self.octave + 1) + self.pitch_class.class_number
+        """ Returns the MIDI note value of the pitch, if possible.
+
+        Otherwise, raises ValueError.
+        """
+        midi = 12 * (self.octave + 1) + self.pitch_class.class_number()
         if 0 <= midi <= 127:
             return midi
         else:
@@ -222,6 +232,8 @@ class Interval(object):
         return self.__number
 
     def semitones(self):
+        """ Returns how many semitones the interval contains. """
+
         number = self.number
         semitones = 0
         # Reduce to a simple interval
@@ -288,7 +300,7 @@ class Interval(object):
         return Interval(inverted_quality[self.quality], inverted_number)
 
     def enharmonic_equivalent(self):
-        """ Returns the enharmonic equivalent of interval, if it exists.
+        """ Returns the enharmonic equivalent of the interval, if it exists.
 
         Returns none otherwise.
         """
@@ -337,7 +349,7 @@ class Interval(object):
 
     @classmethod
     def from_number_and_semitones(cls, number, semitones):
-        """ Returns the interval with a given number and semitones """
+        """ Returns the interval with a given number and semitones. """
         if cls.__has_perfect_quality(number):
             qualities = ('d', 'P', 'A')
         else:
