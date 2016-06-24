@@ -439,6 +439,10 @@ class Chord(object):
     def inversion(self):
         return self.__inversion
 
+    @property
+    def relative(self):
+        return self.__relative
+
     def __eq__(self, other):
         return self.scale_degree == other.scale_degree and \
             self.quality == other.quality and \
