@@ -1,5 +1,7 @@
 from functools import total_ordering
 
+import util
+
 @total_ordering
 class PitchClass(object):
 
@@ -407,6 +409,12 @@ class Key(object):
 
 class Chord(object):
 
+    __lowercase_qualities = frozenset('m', 'm7', 'dim', 'dim7', 'half-dim')
+    __uppercase_qualities = frozenset('M', 'M7', '7')
+    __non_roman_qualities = frozenset('Fr', 'Ger', 'It', 'N')
+    __qualities = frozenset.union(__lowercase_qualities, __uppercase_qualities,
+                                  __non_roman_qualities)
+
     __quality_to_interval_pattern = {
         'm': (Interval('m', 3), Interval('P', 5)),
         'M': (Interval('M', 3), Interval('P', 5)),
@@ -420,8 +428,7 @@ class Chord(object):
     def __init__(self, scale_degree, quality, inversion, relative=None):
         assert 1 <= scale_degree <= 7
         self.__scale_degree = scale_degree
-        assert quality in ('m', 'M', 'M7', '7', 'm7', 'dim', 'dim7',
-                           'half-dim')
+        assert quality in self.__qualities
         self.__quality = quality
         assert inversion in [0, 1, 2, 3]
         self.__inversion = inversion
@@ -449,7 +456,43 @@ class Chord(object):
             self.inversion == other.inversion
 
     def __str__(self):
-        pass
+        result = ""
+        # Base
+        if self.quality in self.__uppercase_qualities:
+            result += util.to_roman(self.scale_degree).upper()
+        elif self.quality in self.__lowercase_qualities:
+            result += util.to_roman(self.scale_degree).lower()
+        else:
+            result += self.quality
+
+        quality_suffix = {'M7': ' M7', 'dim': '°', 'half-dim': 'ø',
+                          'dim7': '°'}
+        result += quality_suffix.get(self.quality, '')
+
+        # Inversion
+        if self.quality in ('M', 'm', 'dim'): # 3 note chords
+            if self.inversion == 1:
+                result += '⁶'
+            elif self.inversion == 2:
+                result += '⁶⁄₄'
+        else: # 7th chords
+            if self.inversion == 0 and self.quality not in ('M7', 'Ger', 'Fr'):
+                result += '⁷'
+            elif self.inversion == 1:
+                result += '⁶⁄₅'
+            elif self.inversion == 2:
+                result += '⁴⁄₃'
+            elif self.inversion == 3:
+                result += '⁴⁄₂'
+
+        # Relative
+        if self.relative:
+            relative_suffix = util.to_roman(self.relative.degree).upper()
+            if self.relative.scale == 'm':
+                relative_suffix = relative_suffix.lower()
+            result += ' ' + relative_suffix
+
+        return result
 
     def pitch_classes(self, key):
         if self.relative:
@@ -467,7 +510,7 @@ class Chord(object):
 
         We can get multiple results because we may have choice which pitch to
         double. The doublings are in descending order of appropriateness for
-        voice leading. First pitch is always the root, rest are arbitrary.
+        voice leading. The first pitch is always the bass, rest are arbitrary.
 
         """
         pass
