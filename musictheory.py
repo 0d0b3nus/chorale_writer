@@ -36,6 +36,15 @@ class PitchClass(object):
     def __str__(self):
         return self.letter + ('♯'*self.sharps) + ('♭'*self.flats)
 
+    def __repr__(self):
+        representation = "PitchClass('{}'".format(self.letter)
+        if self.sharps:
+            representation += ", sharps={}".format(self.sharps)
+        elif self.flats:
+            representation += ", flats={}".format(self.flats)
+        representation += ")"
+        return representation
+
     def __eq__(self, other):
         return self.letter == other.letter and self.sharps == other.sharps \
                 and self.flats == other.flats
@@ -83,10 +92,6 @@ class PitchClass(object):
                 - letter_classes.index(smaller.letter) + 1
         semitones = bigger.class_number() - smaller.class_number()
         return Interval.from_number_and_semitones(number, semitones)
-
-    @classmethod
-    def from_str(cls, string):
-        pass
 
     @staticmethod
     def prev_letter(letter):
@@ -172,7 +177,7 @@ class Pitch(object):
 
     def __eq__(self, other):
         return self.pitch_class == other.pitch_class and \
-            self.octave == self.octave
+            self.octave == other.octave
 
     def __lt__(self, other):
         if self.octave != other.octave:
@@ -182,6 +187,10 @@ class Pitch(object):
 
     def __str__(self):
         return str(self.pitch_class) + str(self.octave)
+
+    def __repr__(self):
+        return 'Pitch(' + repr(self.pitch_class) + \
+               ', {}'.format(self.octave) + ')'
 
     def enharmonic_equivalent(self):
         """ Returns a list of all pitches self is enharmonic to, except self.
@@ -344,10 +353,6 @@ class Interval(object):
         return Interval(quality, number)
 
     @classmethod
-    def from_str(cls, string):
-        pass
-
-    @classmethod
     def from_number_and_semitones(cls, number, semitones):
         """ Returns the interval with a given number and semitones. """
         if cls.__has_perfect_quality(number):
@@ -372,20 +377,55 @@ class Interval(object):
 
 class Key(object):
 
-    def __init__(self):
-        pass
+    def __init__(self, pitch_class, scale="M"):
+        self.__tonic = pitch_class
+        self.__scale = scale
+        self.__degrees = self.__generate_degrees(pitch_class, scale)
 
+    @property
+    def tonic(self):
+        return self.__tonic
+
+    @property
+    def scale(self):
+        return self.__scale
+
+    @property
+    def degrees(self):
+        return self.__degrees
+
+    @staticmethod
+    def __generate_degrees(tonic, scale):
+        major_pattern = "MMmMMMm"
+        minor_pattern = "MmMMmMM"
+
+        degrees = {1: tonic}
+        pattern = major_pattern if scale == "M" else minor_pattern
+        for n in range(2, 8):
+            degrees[n] = degrees[n-1] + Interval(pattern[n-2], 2)
+        return degrees
 
 class Chord(object):
 
-    def __init__(self, scale_degree, quality, inversion):
+    __quality_to_interval_pattern = {
+        'm': (Interval('m', 3), Interval('P', 5)),
+        'M': (Interval('M', 3), Interval('P', 5)),
+        'M7': (Interval('M', 3), Interval('P', 5), Interval('M', 7)),
+        '7': (Interval('M', 3), Interval('P', 5), Interval('m', 7)),
+        'm7': (Interval('m', 3), Interval('P', 5), Interval('m', 7)),
+        'dim': (Interval('m', 3), Interval('d', 5)),
+        'dim7': (Interval('m', 3), Interval('d', 5), Interval('d', 7)),
+        'half-dim': (Interval('m', 3), Interval('d', 5), Interval('m', 7))}
+
+    def __init__(self, scale_degree, quality, inversion, relative=None):
         assert 1 <= scale_degree <= 7
         self.__scale_degree = scale_degree
-        assert quality in ("m", "M", "M7", "7", "m7", "dim", "dim7",
-                           "half-dim")
+        assert quality in ('m', 'M', 'M7', '7', 'm7', 'dim', 'dim7',
+                           'half-dim')
         self.__quality = quality
         assert inversion in [0, 1, 2, 3]
         self.__inversion = inversion
+        self.__relative = relative
 
     @property
     def scale_degree(self):
@@ -406,6 +446,17 @@ class Chord(object):
 
     def __str__(self):
         pass
+
+    def pitch_classes(self, key):
+        if self.relative:
+            return # FIXME
+        pitch_classes = [key.degrees[self.scale_degree]]
+
+        pattern = self.__quality_to_interval_pattern[self.quality]
+        for interval in pattern:
+            pitch_classes.append(pitch_classes[0] + interval)
+
+        return pitch_classes
 
     def four_voice_realizations(self, key):
         """ Returns a list of realizations of the chord as 4 pitch classes

@@ -47,14 +47,19 @@ class TestPitchClasses(unittest.TestCase):
         self.assertEqual(str(PitchClass('G', sharps=2)), 'G♯♯')
         self.assertEqual(str(PitchClass('A', flats=1)), 'A♭')
 
+    def test_repr(self):
+        C = PitchClass('C')
+        Fs = PitchClass('F', sharps=1)
+        Gbb = PitchClass('C', flats=2)
+        self.assertEqual(C, eval(repr(C)))
+        self.assertEqual(Fs, eval(repr(Fs)))
+        self.assertEqual(Gbb, eval(repr(Gbb)))
+
     def test_enharmonic(self):
         self.assertTrue(
             PitchClass('B', sharps=1).is_enharmonic_to(PitchClass('C')))
         self.assertFalse(
             PitchClass('B').is_enharmonic_to(PitchClass('C')))
-        pass
-
-    def test_from_string(self):
         pass
 
 class TestPitches(unittest.TestCase):
@@ -76,6 +81,14 @@ class TestPitches(unittest.TestCase):
 
     def test_str(self):
         pass
+
+    def test_repr(self):
+        C3 = Pitch(PitchClass('C'), 3)
+        Fs2 = Pitch(PitchClass('F', sharps=1), 2)
+        Gbb5 = Pitch(PitchClass('C', flats=2), 5)
+        self.assertEqual(C3, eval(repr(C3)))
+        self.assertEqual(Fs2, eval(repr(Fs2)))
+        self.assertEqual(Gbb5, eval(repr(Gbb5)))
 
     def test_add(self):
         C, G, D, A = (PitchClass(l) for l in 'CGDA')
@@ -203,9 +216,6 @@ class TestIntervals(unittest.TestCase):
         self.assertEqual(Interval('A', 15).octaves(), 2)
         self.assertEqual(Interval('M', 14).octaves(), 1)
 
-    def test_from_string(self):
-        pass
-
 
 class TestChords(unittest.TestCase):
 
@@ -222,7 +232,7 @@ class TestChords(unittest.TestCase):
 
     def test_str(self):
         minor_tonic = Chord(1, 'm', 0)
-        self.assertEqual(str(minor_tonic), 'I')
+        self.assertEqual(str(minor_tonic), 'i')
 
         six_four = Chord(1, 'M', 2)
         self.assertEqual(str(six_four), 'I 6/4')
