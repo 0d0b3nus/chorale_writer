@@ -1,3 +1,5 @@
+""" Utility functions for Marvin. """
+
 from collections import OrderedDict
 
 ROMAN_NUMERAL_DICT = OrderedDict([
@@ -6,12 +8,13 @@ ROMAN_NUMERAL_DICT = OrderedDict([
     ])
 
 def to_roman(n):
+    """ Given int between 1 and 4000 returns corresponding Roman numeral. """
     if not 1 <= n <= 4000:
         raise ValueError('to_roman can only convert integers between 1 and '
                          '3999')
     result = ""
     for roman_value in ROMAN_NUMERAL_DICT.keys():
-         how_many, remainder = divmod(n, roman_value)
-         result += ROMAN_NUMERAL_DICT[roman_value] * how_many
-         n = remainder
+        how_many, remainder = divmod(n, roman_value)
+        result += ROMAN_NUMERAL_DICT[roman_value] * how_many
+        n = remainder
     return result
