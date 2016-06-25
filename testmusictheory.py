@@ -21,6 +21,14 @@ class TestPitchClasses(unittest.TestCase):
         self.assertNotEqual(PitchClass('C', sharps=1), PitchClass('C', flats=1))
         self.assertNotEqual(PitchClass('B', sharps=1), PitchClass('C', flats=1))
 
+    def test_hash(self):
+        self.assertEqual(hash(PitchClass('C', sharps=1)),
+                         hash(PitchClass('C', sharps=1)))
+        self.assertNotEqual(hash(PitchClass('C', sharps=1)),
+                            hash(PitchClass('C', flats=1)))
+        self.assertNotEqual(hash(PitchClass('B', sharps=1)),
+                            hash(PitchClass('C', sharps=1)))
+
     def test_cmp(self):
         self.assertLess(PitchClass('C'), PitchClass('D'))
         self.assertLess(PitchClass('E'), PitchClass('F', flats=1))
@@ -73,11 +81,19 @@ class TestPitches(unittest.TestCase):
 
     def test_eq(self):
         C = PitchClass('C')
-        Bs = PitchClass('B', flats=1)
+        Bs = PitchClass('B', sharps=1)
 
         self.assertEqual(Pitch(C, 3), Pitch(C, 3))
         self.assertNotEqual(Pitch(C, 3), Pitch(C, 4))
         self.assertNotEqual(Pitch(Bs, -1), Pitch(C, 0))
+
+    def test_hash(self):
+        C = PitchClass('C')
+        Bs = PitchClass('B', sharps=1)
+
+        self.assertEqual(hash(Pitch(C, 3)), hash(Pitch(C, 3)))
+        self.assertNotEqual(hash(Pitch(C, 3)), hash(Pitch(C, 4)))
+        self.assertNotEqual(hash(Pitch(Bs, -1)), hash(Pitch(C, 0)))
 
     def test_str(self):
         pass
@@ -135,6 +151,12 @@ class TestIntervals(unittest.TestCase):
         self.assertNotEqual(Interval('P', 5), Interval('d', 5))
         self.assertNotEqual(Interval('P', 5), Interval('P', 1))
         self.assertNotEqual(Interval('d', 5), Interval('A', 4))
+
+    def test_hash(self):
+        self.assertEqual(hash(Interval('P', 5)), hash(Interval('P', 5)))
+        self.assertNotEqual(hash(Interval('P', 5)), hash(Interval('d', 5)))
+        self.assertNotEqual(hash(Interval('P', 5)), hash(Interval('P', 1)))
+        self.assertNotEqual(hash(Interval('d', 5)), hash(Interval('A', 4)))
 
     def test_str(self):
         self.assertEqual(str(Interval('P', 1)), "P1")
@@ -220,22 +242,21 @@ class TestIntervals(unittest.TestCase):
 class TestChords(unittest.TestCase):
 
     def test_eq(self):
-        major_tonic = Chord(1, 'M', 0)
-        other_major_tonic = Chord(1, 'M', 0)
-        self.assertEqual(major_tonic, other_major_tonic)
+        self.assertEqual(Chord(1, 'M', 0), Chord(1, 'M', 0))
+        self.assertNotEqual(Chord(1, 'M', 0), Chord(1, 'M', 1))
+        self.assertNotEqual(Chord(1, 'M', 0), Chord(1, 'm', 0))
 
-        inverted_major_tonic = Chord(1, 'M', 1)
-        self.assertNotEqual(major_tonic, inverted_major_tonic)
-
-        minor_tonic = Chord(1, 'm', 0)
-        self.assertNotEqual(major_tonic, minor_tonic)
+    def test_hash(self):
+        self.assertEqual(hash(Chord(1, 'M', 0)), hash(Chord(1, 'M', 0)))
+        self.assertNotEqual(hash(Chord(1, 'M', 0)), hash(Chord(1, 'M', 1)))
+        self.assertNotEqual(hash(Chord(1, 'M', 0)), hash(Chord(1, 'm', 0)))
 
     def test_str(self):
         minor_tonic = Chord(1, 'm', 0)
         self.assertEqual(str(minor_tonic), 'i')
 
-        six_four = Chord(1, 'M', 2)
-        self.assertEqual(str(six_four), 'I 6/4')
+        six_four = Chord(4, 'M', 2)
+        self.assertEqual(str(six_four), 'IV⁶⁄₄')
 
 
 if __name__ == '__main__':

@@ -51,6 +51,9 @@ class PitchClass(object):
         return self.letter == other.letter and self.sharps == other.sharps \
                 and self.flats == other.flats
 
+    def __hash__(self):
+        return hash((type(self), self.letter, self.sharps, self.flats))
+
     def __lt__(self, other):
         if self.class_number() != other.class_number():
             return self.class_number() < other.class_number()
@@ -181,6 +184,9 @@ class Pitch(object):
         return self.pitch_class == other.pitch_class and \
             self.octave == other.octave
 
+    def __hash__(self):
+        return hash((type(self), self.pitch_class, self.octave))
+
     def __lt__(self, other):
         if self.octave != other.octave:
             return self.octave < other.octave
@@ -271,6 +277,9 @@ class Interval(object):
 
     def __eq__(self, other):
         return self.quality == other.quality and self.number == other.number
+
+    def __hash__(self):
+        return hash((type(self), self.quality, self.number))
 
     def __lt__(self, other):
         if self.number < other.number:
@@ -396,6 +405,12 @@ class Key(object):
     def degrees(self):
         return self.__degrees
 
+    def __eq__(self, other):
+        return self.tonic == other.tonic and self.scale == other.scale
+
+    def __hash__(self):
+        return hash((type(self), self.tonic, self.scale))
+
     @staticmethod
     def __generate_degrees(tonic, scale):
         major_pattern = "MMmMMMm"
@@ -409,9 +424,9 @@ class Key(object):
 
 class Chord(object):
 
-    __lowercase_qualities = frozenset('m', 'm7', 'dim', 'dim7', 'half-dim')
-    __uppercase_qualities = frozenset('M', 'M7', '7')
-    __non_roman_qualities = frozenset('Fr', 'Ger', 'It', 'N')
+    __lowercase_qualities = frozenset(('m', 'm7', 'dim', 'dim7', 'half-dim'))
+    __uppercase_qualities = frozenset(('M', 'M7', '7'))
+    __non_roman_qualities = frozenset(('Fr', 'Ger', 'It', 'N'))
     __qualities = frozenset.union(__lowercase_qualities, __uppercase_qualities,
                                   __non_roman_qualities)
 
@@ -453,7 +468,12 @@ class Chord(object):
     def __eq__(self, other):
         return self.scale_degree == other.scale_degree and \
             self.quality == other.quality and \
-            self.inversion == other.inversion
+            self.inversion == other.inversion and \
+            self.relative == other.relative
+
+    def __hash__(self):
+        return hash((type(self), self.scale_degree, self.quality,
+                     self.inversion, self.relative))
 
     def __str__(self):
         result = ""
