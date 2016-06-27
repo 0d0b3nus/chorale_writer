@@ -1,3 +1,4 @@
+from collections import namedtuple
 from functools import total_ordering
 
 import util
@@ -447,7 +448,11 @@ class Chord(object):
         self.__quality = quality
         assert inversion in [0, 1, 2, 3]
         self.__inversion = inversion
-        self.__relative = relative
+        if relative:
+            Relative = namedtuple('Relative', ['degree', 'scale'])
+            self.__relative = Relative(relative[0], relative[1])
+        else:
+            self.__relative = None
 
     @property
     def scale_degree(self):
@@ -510,27 +515,37 @@ class Chord(object):
             relative_suffix = util.to_roman(self.relative.degree).upper()
             if self.relative.scale == 'm':
                 relative_suffix = relative_suffix.lower()
-            result += ' ' + relative_suffix
+            result += '/' + relative_suffix
 
         return result
 
     def pitch_classes(self, key):
-        if self.relative:
-            return # FIXME
-        pitch_classes = [key.degrees[self.scale_degree]]
+        """ Returns a tuple of the pitch classes of the chord.
 
+        The pitch classes are in order of ascending thirds.
+        """
+        if self.relative:
+            actual_key = Key(key.degrees[self.relative.degree],
+                             self.relative.scale)
+            return Chord(self.scale_degree, self.quality,
+                         self.inversion).pitch_classes(actual_key)
+
+        classes = [key.degrees[self.scale_degree]]
         pattern = self.__quality_to_interval_pattern[self.quality]
         for interval in pattern:
-            pitch_classes.append(pitch_classes[0] + interval)
+            classes.append(classes[0] + interval)
 
-        return pitch_classes
+        return tuple(classes)
+
+    def equivalence_classes(self, key):
+        return tuple(pitch_class.class_number() for pitch_class
+                     in self.pitch_classes(key))
 
     def four_voice_realizations(self, key):
-        """ Returns a list of realizations of the chord as 4 pitch classes
+        """ Returns a tuple of realizations of the chord as 4 pitch classes.
 
         We can get multiple results because we may have choice which pitch to
         double. The doublings are in descending order of appropriateness for
         voice leading. The first pitch is always the bass, rest are arbitrary.
-
         """
         pass

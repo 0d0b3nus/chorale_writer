@@ -258,6 +258,9 @@ class TestChords(unittest.TestCase):
         six_four = Chord(4, 'M', 2)
         self.assertEqual(str(six_four), 'IV⁶⁄₄')
 
+        five_of_five = Chord(5, 'M', 2, (5, 'M'))
+        pass
+
 
 if __name__ == '__main__':
     unittest.main()
