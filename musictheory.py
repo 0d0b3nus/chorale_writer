@@ -412,6 +412,17 @@ class Key(object):
     def __hash__(self):
         return hash((type(self), self.tonic, self.scale))
 
+    def common_chords(self):
+        chords = []
+        major_key_chords = ((1, "M"), (2, "m"), (3, "m"), (4, "M"), (5, "M"),
+                            (5, "7"), (4, "M7"), (2, "m7"), (6, "m"),
+                            (7, "half-dim"), (7, "dim")) #FIXME: Add N, Ger, Fr, It
+        if self.scale == "M":
+            for scale_degree, quality in major_key_chords:
+                chords.append(Chord(scale_degree, quality, 0))
+        return chords
+
+
     @staticmethod
     def __generate_degrees(tonic, scale):
         major_pattern = "MMmMMMm"
