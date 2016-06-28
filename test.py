@@ -7,7 +7,11 @@ print(Cminor.degrees)
 I= Chord(1, 'M', 0)
 print(I.pitch_classes(CMajor))
 
-print(CMajor.common_chords())
+for chord in CMajor.common_chords():
+    print(chord)
+
+for chord in Cminor.common_chords():
+    print(chord)
 
 five_of_five = Chord(5, 'M7', 2, (5, 'M'))
 print(five_of_five)

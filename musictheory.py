@@ -414,12 +414,36 @@ class Key(object):
 
     def common_chords(self):
         chords = []
-        major_key_chords = ((1, "M"), (2, "m"), (3, "m"), (4, "M"), (5, "M"),
-                            (5, "7"), (4, "M7"), (2, "m7"), (6, "m"),
-                            (7, "half-dim"), (7, "dim")) #FIXME: Add N, Ger, Fr, It
-        if self.scale == "M":
-            for scale_degree, quality in major_key_chords:
-                chords.append(Chord(scale_degree, quality, 0))
+        major_key_chords = ((1, 'M'), (2, 'm'), (3, 'm'), (4, 'M'), (5, 'M'),
+                            (5, '7'), (4, 'M7'), (2, 'm7'), (6, 'm'),
+                            (7, 'half-dim'), (7, 'dim')) #FIXME: Add N, Ger, Fr, It
+        minor_key_chords = ((1, 'm'), (2, 'dim'), (3, 'M'), (4, 'm'), (5, 'M'), (5, '7'), (5, 'm'), (6, 'M'), (7, 'M'), (2, 'half-dim'), (2, 'dim7')) #FIXME
+        if self.scale == 'M':
+            closely_related_keys = (None,     # tonic chords
+                                    (5, 'M'), # dominant chords
+                                    (6, 'm'), # relative minor chords
+                                    (4, 'M'), # subdominant chords
+                                    (1, 'm')) # parallel minor chords
+        elif self.scale == 'm':
+            closely_related_keys = (None,     # tonic chords
+                                    (3, 'M'), # relative major chords
+                                    (6, 'm'),
+                                    (2, 'm'),
+                                    (7, 'M'),
+                                    (1, 'M')) # parallel major chords
+        for key in closely_related_keys:
+            if key == None:
+                if self.scale == 'M':
+                    chords_in_key = major_key_chords
+                else:
+                    chords_in_key = minor_key_chords
+            else:
+                if key[1] == 'M':
+                    chords_in_key = major_key_chords
+                else:
+                    chords_in_key = minor_key_chords
+            for scale_degree, quality in chords_in_key:
+                chords.append(Chord(scale_degree, quality, 0, key))
         return chords
 
 

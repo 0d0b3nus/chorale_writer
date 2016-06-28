@@ -62,4 +62,4 @@ for file_ in FILES:
     if file_.endswith('.mid'):
         with MidiFile('corpus/' + file_) as midi_file:
             if len(midi_file.tracks) == 5:
-                chunks(midi_file)
+                print(chunks(midi_file))
