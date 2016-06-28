@@ -393,6 +393,7 @@ class Key(object):
         self.__tonic = pitch_class
         self.__scale = scale
         self.__degrees = self.__generate_degrees(pitch_class, scale)
+        self.__common_chords = None
 
     @property
     def tonic(self):
@@ -413,6 +414,9 @@ class Key(object):
         return hash((type(self), self.tonic, self.scale))
 
     def common_chords(self):
+        if self.__common_chords:
+            return self.__common_chords
+
         chords = []
         major_key_chords = ((1, 'M'), (2, 'm'), (3, 'm'), (4, 'M'), (5, 'M'),
                             (5, '7'), (4, 'M7'), (2, 'm7'), (6, 'm'),
@@ -444,6 +448,8 @@ class Key(object):
                     chords_in_key = minor_key_chords
             for scale_degree, quality in chords_in_key:
                 chords.append(Chord(scale_degree, quality, 0, key))
+
+        self.__common_chords = chords
         return chords
 
 
