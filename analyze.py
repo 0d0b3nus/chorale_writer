@@ -34,7 +34,7 @@ class ChordProgression(object):
 
         for chunk in chunks:
             for chord in key.common_chords():
-                if set(chunk) == set(chord.equivalence_classes(key)):
+                if set(chunk).issubset(set(chord.equivalence_classes(key))):
                     print(chunk, ' is ', chord)
                     break
             else:
