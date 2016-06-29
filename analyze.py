@@ -22,23 +22,29 @@ class ChordProgression(object):
         progression = []
 
     def from_midi_file(self, midi_file):
+        chords = []
         key_string = get_key_string(midi_file)
-        print(key_string)
-        if key_string.endswith('m'):
-            key = Key(PitchClass(key_string[:-1]), 'm')
-        else:
-            key = Key(PitchClass(key_string), 'M')
+        key = Key.from_str(key_string)
 
-        print(key)
         chunks = self.__chunks(midi_file)
 
         for chunk in chunks:
+            best_match_rate = 0
+            chunk_set = set(chunk)
             for chord in key.common_chords():
-                if set(chunk).issubset(set(chord.equivalence_classes(key))):
-                    print(chunk, ' is ', chord)
+                chord_set = set(chord.equivalence_classes(key))
+                if chunk_set.issubset(chord_set):
+                    chords.append(chord)
                     break
+                match_rate = len(chunk_set & chord_set) / \
+                             len(chunk_set | chord_set)
+                if match_rate > best_match_rate:
+                    best_match = chord
+                    best_match_rate = match_rate
             else:
-                print("The fuck is ", chunk)
+                chords.append(best_match)
+
+        return chords
 
     def __chunks(self, midi_file):
 
@@ -82,11 +88,17 @@ class ChordProgression(object):
 
 FILES = os.listdir('corpus/')
 
+count = 0
+bad = 0
 for file_ in FILES:
     if file_.endswith('.mid'):
         with MidiFile('corpus/' + file_) as midi_file:
             if len(midi_file.tracks) == 5:
+                count += 1
                 cp = ChordProgression()
-                print(file_)
-                print(cp.from_midi_file(midi_file))
-                break
+                chords = cp.from_midi_file(midi_file)
+                if chords[-1].scale_degree not in (1,5):
+                    bad += 1
+                    print(chords)
+
+print(bad, count, bad/count)

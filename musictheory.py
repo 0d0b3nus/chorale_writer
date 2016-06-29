@@ -99,6 +99,14 @@ class PitchClass(object):
         semitones = bigger.class_number() - smaller.class_number()
         return Interval.from_number_and_semitones(number, semitones)
 
+    @classmethod
+    def from_str(cls, string):
+        sharps = string.count('#') + string.count('♯')
+        flats = string.count('b') + string.count('♭')
+        string = string.replace('#', '').replace('♯', '')
+        string = string.replace('b', '').replace('♭', '')
+        return cls(string, sharps=sharps, flats=flats)
+
     @staticmethod
     def prev_letter(letter):
         return chr(ord(letter) - 1) if letter != 'A' else 'G'
@@ -430,9 +438,10 @@ class Key(object):
                                     (1, 'm')) # parallel minor chords
         elif self.scale == 'm':
             closely_related_keys = (None,     # tonic chords
+                                    (5, 'm'), # dominant chords
                                     (3, 'M'), # relative major chords
-                                    (6, 'm'),
-                                    (2, 'm'),
+                                    (4, 'm'), # subdominant chords
+                                    (6, 'M'),
                                     (7, 'M'),
                                     (1, 'M')) # parallel major chords
         for key in closely_related_keys:
@@ -451,6 +460,19 @@ class Key(object):
 
         self.__common_chords = chords
         return chords
+
+    @classmethod
+    def from_str(cls, string):
+        if string.endswith('M'):
+            scale = 'M'
+            string = string[:-1]
+        elif string.endswith('m'):
+            scale = 'm'
+            string = string[:-1]
+        else:
+            scale = 'M'
+
+        return cls(PitchClass.from_str(string), scale)
 
 
     @staticmethod
@@ -559,6 +581,14 @@ class Chord(object):
             result += '/' + relative_suffix
 
         return result
+
+    def __repr__(self):
+        repr_string = 'Chord({}, {}, {}'.format(self.scale_degree, self.quality,
+                                                self.inversion)
+        repr_string += ', ' + repr(self.relative) if self.relative else ''
+        repr_string += ')'
+
+        return repr_string
 
     def pitch_classes(self, key):
         """ Returns a tuple of the pitch classes of the chord.
