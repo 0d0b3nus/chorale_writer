@@ -1,7 +1,7 @@
 import os
 
 from mido import MidiFile
-from musictheory import PitchClass, Key
+from musictheory import PitchClass, Key, Chord
 
 def get_key_string(midi_file):
     meta_track = midi_file.tracks[0]
@@ -34,15 +34,19 @@ class ChordProgression(object):
             for chord in key.common_chords():
                 chord_set = set(chord.equivalence_classes(key))
                 if chunk_set.issubset(chord_set):
-                    chords.append(chord)
+                    best_match = chord
                     break
                 match_rate = len(chunk_set & chord_set) / \
                              len(chunk_set | chord_set)
                 if match_rate > best_match_rate:
                     best_match = chord
                     best_match_rate = match_rate
-            else:
-                chords.append(best_match)
+            try:
+                inversion = best_match.equivalence_classes(key).index(chunk[0])
+            except ValueError:
+                inversion = 0 # Bass note is not a chord tone, assume root pos
+            chords.append(Chord(best_match.scale_degree, best_match.quality,
+                                inversion, best_match.relative))
 
         return chords
 
@@ -88,17 +92,12 @@ class ChordProgression(object):
 
 FILES = os.listdir('corpus/')
 
-count = 0
-bad = 0
 for file_ in FILES:
     if file_.endswith('.mid'):
         with MidiFile('corpus/' + file_) as midi_file:
             if len(midi_file.tracks) == 5:
-                count += 1
                 cp = ChordProgression()
                 chords = cp.from_midi_file(midi_file)
-                if chords[-1].scale_degree not in (1,5):
-                    bad += 1
-                    print(chords)
-
-print(bad, count, bad/count)
+                if chords[-1].scale_degree not in (1, 5):
+                    print(file_)
+                    print(chords[-1])
