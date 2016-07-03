@@ -93,11 +93,10 @@ class ChordProgression(object):
 FILES = os.listdir('corpus/')
 
 for file_ in FILES:
-    if file_.endswith('.mid'):
+    if file_.startswith('f_'):
+        print(file_)
         with MidiFile('corpus/' + file_) as midi_file:
             if len(midi_file.tracks) == 5:
                 cp = ChordProgression()
                 chords = cp.from_midi_file(midi_file)
-                if chords[-1].scale_degree not in (1, 5):
-                    print(file_)
-                    print(chords[-1])
+                # print(' | '.join(map(str, chords)))

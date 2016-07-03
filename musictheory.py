@@ -429,7 +429,7 @@ class Key(object):
         major_key_chords = ((1, 'M'), (2, 'm'), (3, 'm'), (4, 'M'), (5, 'M'),
                             (5, '7'), (4, 'M7'), (2, 'm7'), (6, 'm'),
                             (7, 'half-dim'), (7, 'dim')) #FIXME: Add N, Ger, Fr, It
-        minor_key_chords = ((1, 'm'), (2, 'dim'), (3, 'M'), (4, 'm'), (5, 'M'), (5, '7'), (5, 'm'), (6, 'M'), (7, 'M'), (2, 'half-dim'), (2, 'dim7')) #FIXME
+        minor_key_chords = ((1, 'm'), (2, 'dim'), (3, 'M'), (4, 'm'), (5, 'M'), (5, '7'), (5, 'm'), (6, 'M'), (7, 'M'), (2, 'half-dim'), (2, 'dim7'), (1, 'M')) #FIXME
         if self.scale == 'M':
             closely_related_keys = (None,     # tonic chords
                                     (5, 'M'), # dominant chords
