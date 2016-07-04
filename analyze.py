@@ -99,4 +99,4 @@ for file_ in FILES:
             if len(midi_file.tracks) == 5:
                 cp = ChordProgression()
                 chords = cp.from_midi_file(midi_file)
-                # print(' | '.join(map(str, chords)))
+                print(' | '.join(map(str, chords)))
