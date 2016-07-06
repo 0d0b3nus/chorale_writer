@@ -504,6 +504,9 @@ class Chord(object):
         'dim7': (Interval('m', 3), Interval('d', 5), Interval('d', 7)),
         'half-dim': (Interval('m', 3), Interval('d', 5), Interval('m', 7))}
 
+    __pitch_classes_cache = {} # FIXME: Replace with LRU caches
+    __equivalence_classes_cache = {} #FIXME: Replace with LRU caches
+
     def __init__(self, scale_degree, quality, inversion, relative=None):
         assert 1 <= scale_degree <= 7
         self.__scale_degree = scale_degree
@@ -595,6 +598,10 @@ class Chord(object):
 
         The pitch classes are in order of ascending thirds.
         """
+        cached_result = self.__pitch_classes_cache.get((self, key))
+        if cached_result is not None:
+            return cached_result
+
         if self.relative:
             actual_key = Key(key.degrees[self.relative.degree],
                              self.relative.scale)
@@ -606,11 +613,19 @@ class Chord(object):
         for interval in pattern:
             classes.append(classes[0] + interval)
 
-        return tuple(classes)
+        result = tuple(classes)
+        self.__pitch_classes_cache[(self, key)] = result
+        return result
 
     def equivalence_classes(self, key):
-        return tuple(pitch_class.class_number() for pitch_class
+        cached_result = self.__equivalence_classes_cache.get((self, key))
+        if cached_result is not None:
+            return cached_result
+
+        result = tuple(pitch_class.class_number() for pitch_class
                      in self.pitch_classes(key))
+        self.__equivalence_classes_cache[(self, key)] = result
+        return result
 
     def four_voice_realizations(self, key):
         """ Returns a tuple of realizations of the chord as 4 pitch classes.
