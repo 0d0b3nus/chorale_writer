@@ -1,7 +1,7 @@
 import os
 
 from mido import MidiFile
-from musictheory import PitchClass, Key, Chord
+from musictheory import PitchClass, Key, Chord, GetChord
 
 def get_key_string(midi_file):
     meta_track = midi_file.tracks[0]
@@ -45,8 +45,8 @@ class ChordProgression(object):
                 inversion = best_match.equivalence_classes(key).index(chunk[0])
             except ValueError:
                 inversion = 0 # Bass note is not a chord tone, assume root pos
-            chords.append(Chord(best_match.scale_degree, best_match.quality,
-                                inversion, best_match.relative))
+            chords.append(GetChord(best_match.scale_degree, best_match.quality,
+                                   inversion, best_match.relative))
 
         return chords
 

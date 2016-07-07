@@ -394,10 +394,29 @@ class Interval(object):
         """
         return number % 7 in [1, 4, 5]
 
+class CachingKeyPool(object):
+
+    def __init__(self):
+        self.__key_dict = {}
+
+    def __call__(self, pitch_class, scale='M'):
+        dict_key = (pitch_class, scale)
+        cached_result = self.__key_dict.get(dict_key)
+        if cached_result is not None:
+            return cached_result
+
+        new_key = Key(*dict_key)
+        self.__key_dict[dict_key] = new_key
+        return new_key
+
+    def clear_cache(self):
+        pass # FIXME
+
+GetKey = CachingKeyPool()
 
 class Key(object):
 
-    def __init__(self, pitch_class, scale="M"):
+    def __init__(self, pitch_class, scale='M'):
         self.__tonic = pitch_class
         self.__scale = scale
         self.__degrees = self.__generate_degrees(pitch_class, scale)
@@ -429,7 +448,9 @@ class Key(object):
         major_key_chords = ((1, 'M'), (2, 'm'), (3, 'm'), (4, 'M'), (5, 'M'),
                             (5, '7'), (4, 'M7'), (2, 'm7'), (6, 'm'),
                             (7, 'half-dim'), (7, 'dim')) #FIXME: Add N, Ger, Fr, It
-        minor_key_chords = ((1, 'm'), (2, 'dim'), (3, 'M'), (4, 'm'), (5, 'M'), (5, '7'), (5, 'm'), (6, 'M'), (7, 'M'), (2, 'half-dim'), (2, 'dim7'), (1, 'M')) #FIXME
+        minor_key_chords = ((1, 'm'), (2, 'dim'), (3, 'M'), (4, 'm'), (5, 'M'),
+                            (5, '7'), (5, 'm'), (6, 'M'), (7, 'M'),
+                            (2, 'half-dim'), (2, 'dim7'), (1, 'M')) #FIXME
         if self.scale == 'M':
             closely_related_keys = (None,     # tonic chords
                                     (5, 'M'), # dominant chords
@@ -445,7 +466,7 @@ class Key(object):
                                     (7, 'M'),
                                     (1, 'M')) # parallel major chords
         for key in closely_related_keys:
-            if key == None:
+            if key is None:
                 if self.scale == 'M':
                     chords_in_key = major_key_chords
                 else:
@@ -456,7 +477,7 @@ class Key(object):
                 else:
                     chords_in_key = minor_key_chords
             for scale_degree, quality in chords_in_key:
-                chords.append(Chord(scale_degree, quality, 0, key))
+                chords.append(GetChord(scale_degree, quality, 0, key))
 
         self.__common_chords = chords
         return chords
@@ -472,7 +493,7 @@ class Key(object):
         else:
             scale = 'M'
 
-        return cls(PitchClass.from_str(string), scale)
+        return GetKey(PitchClass.from_str(string), scale)
 
 
     @staticmethod
@@ -482,9 +503,29 @@ class Key(object):
 
         degrees = {1: tonic}
         pattern = major_pattern if scale == "M" else minor_pattern
-        for n in range(2, 8):
-            degrees[n] = degrees[n-1] + Interval(pattern[n-2], 2)
+        for num in range(2, 8):
+            degrees[num] = degrees[num-1] + Interval(pattern[num-2], 2)
         return degrees
+
+class CachingChordPool(object):
+
+    def __init__(self):
+        self.__chord_dict = {}
+
+    def __call__(self, scale_degree, quality, inversion, relative=None):
+        dict_key = (scale_degree, quality, inversion, relative)
+        cached_result = self.__chord_dict.get(dict_key)
+        if cached_result is not None:
+            return cached_result
+
+        new_chord = Chord(*dict_key)
+        self.__chord_dict[dict_key] = new_chord
+        return new_chord
+
+    def clear_cache(self):
+        pass # FIXME
+
+GetChord = CachingChordPool()
 
 class Chord(object):
 
@@ -504,9 +545,6 @@ class Chord(object):
         'dim7': (Interval('m', 3), Interval('d', 5), Interval('d', 7)),
         'half-dim': (Interval('m', 3), Interval('d', 5), Interval('m', 7))}
 
-    __pitch_classes_cache = {} # FIXME: Replace with LRU caches
-    __equivalence_classes_cache = {} #FIXME: Replace with LRU caches
-
     def __init__(self, scale_degree, quality, inversion, relative=None):
         assert 1 <= scale_degree <= 7
         self.__scale_degree = scale_degree
@@ -519,6 +557,10 @@ class Chord(object):
             self.__relative = Relative(relative[0], relative[1])
         else:
             self.__relative = None
+
+        # Cached results
+        self.__pitch_classes = {}
+        self.__equivalence_classes = {}
 
     @property
     def scale_degree(self):
@@ -598,15 +640,15 @@ class Chord(object):
 
         The pitch classes are in order of ascending thirds.
         """
-        cached_result = self.__pitch_classes_cache.get((self, key))
+        cached_result = self.__pitch_classes.get(key)
         if cached_result is not None:
             return cached_result
 
         if self.relative:
-            actual_key = Key(key.degrees[self.relative.degree],
-                             self.relative.scale)
-            return Chord(self.scale_degree, self.quality,
-                         self.inversion).pitch_classes(actual_key)
+            actual_key = GetKey(key.degrees[self.relative.degree],
+                                self.relative.scale)
+            return GetChord(self.scale_degree, self.quality,
+                            self.inversion).pitch_classes(actual_key)
 
         classes = [key.degrees[self.scale_degree]]
         pattern = self.__quality_to_interval_pattern[self.quality]
@@ -614,17 +656,17 @@ class Chord(object):
             classes.append(classes[0] + interval)
 
         result = tuple(classes)
-        self.__pitch_classes_cache[(self, key)] = result
+        self.__pitch_classes[key] = result
         return result
 
     def equivalence_classes(self, key):
-        cached_result = self.__equivalence_classes_cache.get((self, key))
+        cached_result = self.__equivalence_classes.get(key)
         if cached_result is not None:
             return cached_result
 
         result = tuple(pitch_class.class_number() for pitch_class
-                     in self.pitch_classes(key))
-        self.__equivalence_classes_cache[(self, key)] = result
+                       in self.pitch_classes(key))
+        self.__equivalence_classes[key] = result
         return result
 
     def four_voice_realizations(self, key):
