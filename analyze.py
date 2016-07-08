@@ -1,7 +1,9 @@
 import os
 
+import numpy as np
 from mido import MidiFile
-from musictheory import PitchClass, Key, Chord, GetChord
+
+from musictheory import PitchClass, Key, Chord
 
 def get_key_string(midi_file):
     meta_track = midi_file.tracks[0]
@@ -45,8 +47,7 @@ class ChordProgression(object):
                 inversion = best_match.equivalence_classes(key).index(chunk[0])
             except ValueError:
                 inversion = 0 # Bass note is not a chord tone, assume root pos
-            chords.append(GetChord(best_match.scale_degree, best_match.quality,
-                                   inversion, best_match.relative))
+            chords.append(best_match)
 
         return chords
 
@@ -90,6 +91,29 @@ class ChordProgression(object):
             bucket_list.append(bucket[i])
         return bucket_list
 
+class MarkovChain(object):
+
+    def __init__(self, training_data, order=1):
+        self.tokens = {} #FIXME: Use a bidict?
+        self.__train(training_data, order)
+
+    def __train(self, training_data, order):
+        num_tokens = 0
+        for token in training_data:
+            if token not in self.tokens.values():
+                self.tokens[num_tokens] = token
+                num_tokens += 1
+        print(self.tokens)
+        frequency_table = np.array([], dtype='d', ndmin=order+1)
+
+        # FIXME: Read about slice objects?
+        window_start = 0
+        window_end = order + 1
+        while window_end < len(training_data)
+
+    def generate_sequence(self, start_token=None, end_token=None):
+        pass
+
 FILES = os.listdir('corpus/')
 
 for file_ in FILES:
@@ -99,4 +123,6 @@ for file_ in FILES:
             if len(midi_file.tracks) == 5:
                 cp = ChordProgression()
                 chords = cp.from_midi_file(midi_file)
-                #print(' | '.join(map(str, chords)))
+                print(' | '.join(map(str, chords)))
+                m = MarkovChain(chords)
+                break

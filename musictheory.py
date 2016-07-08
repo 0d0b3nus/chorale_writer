@@ -394,27 +394,9 @@ class Interval(object):
         """
         return number % 7 in [1, 4, 5]
 
-class CachingKeyPool(object):
-
-    def __init__(self):
-        self.__key_dict = {}
-
-    def __call__(self, pitch_class, scale='M'):
-        dict_key = (pitch_class, scale)
-        cached_result = self.__key_dict.get(dict_key)
-        if cached_result is not None:
-            return cached_result
-
-        new_key = Key(*dict_key)
-        self.__key_dict[dict_key] = new_key
-        return new_key
-
-    def clear_cache(self):
-        pass # FIXME
-
-GetKey = CachingKeyPool()
-
 class Key(object):
+
+    __cached_keys = {}
 
     def __init__(self, pitch_class, scale='M'):
         self.__tonic = pitch_class
@@ -477,7 +459,7 @@ class Key(object):
                 else:
                     chords_in_key = minor_key_chords
             for scale_degree, quality in chords_in_key:
-                chords.append(GetChord(scale_degree, quality, 0, key))
+                chords.append(Chord.get_cached(scale_degree, quality, 0, key))
 
         self.__common_chords = chords
         return chords
@@ -493,8 +475,22 @@ class Key(object):
         else:
             scale = 'M'
 
-        return GetKey(PitchClass.from_str(string), scale)
+        return Key.get_cached(PitchClass.from_str(string), scale)
 
+    @classmethod
+    def get_cached(cls, pitch_class, scale='M'):
+        dict_key = (pitch_class, scale)
+        cached_result = cls.__cached_keys.get(dict_key)
+        if cached_result is not None:
+            return cached_result
+
+        new_key = cls(*dict_key)
+        cls.__cached_keys[dict_key] = new_key
+        return new_key
+
+    @classmethod
+    def clear_cache(self):
+        pass # FIXME
 
     @staticmethod
     def __generate_degrees(tonic, scale):
@@ -507,27 +503,10 @@ class Key(object):
             degrees[num] = degrees[num-1] + Interval(pattern[num-2], 2)
         return degrees
 
-class CachingChordPool(object):
-
-    def __init__(self):
-        self.__chord_dict = {}
-
-    def __call__(self, scale_degree, quality, inversion, relative=None):
-        dict_key = (scale_degree, quality, inversion, relative)
-        cached_result = self.__chord_dict.get(dict_key)
-        if cached_result is not None:
-            return cached_result
-
-        new_chord = Chord(*dict_key)
-        self.__chord_dict[dict_key] = new_chord
-        return new_chord
-
-    def clear_cache(self):
-        pass # FIXME
-
-GetChord = CachingChordPool()
 
 class Chord(object):
+
+    __cached_chords = {}
 
     __lowercase_qualities = frozenset(('m', 'm7', 'dim', 'dim7', 'half-dim'))
     __uppercase_qualities = frozenset(('M', 'M7', '7'))
@@ -645,10 +624,10 @@ class Chord(object):
             return cached_result
 
         if self.relative:
-            actual_key = GetKey(key.degrees[self.relative.degree],
-                                self.relative.scale)
-            return GetChord(self.scale_degree, self.quality,
-                            self.inversion).pitch_classes(actual_key)
+            actual_key = Key.get_cached(key.degrees[self.relative.degree],
+                                        self.relative.scale)
+            return Chord.get_cached(self.scale_degree, self.quality,
+                                    self.inversion).pitch_classes(actual_key)
 
         classes = [key.degrees[self.scale_degree]]
         pattern = self.__quality_to_interval_pattern[self.quality]
@@ -677,3 +656,15 @@ class Chord(object):
         voice leading. The first pitch is always the bass, rest are arbitrary.
         """
         pass
+
+    @classmethod
+    def get_cached(cls, scale_degree, quality, inversion, relative=None):
+        dict_key = (scale_degree, quality, inversion, relative)
+        cached_result = cls.__cached_chords.get(dict_key)
+        if cached_result is not None:
+            return cached_result
+
+        new_chord = cls(*dict_key)
+        cls.__cached_chords[dict_key] = new_chord
+        return new_chord
+
