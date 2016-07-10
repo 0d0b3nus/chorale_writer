@@ -402,7 +402,9 @@ class Key(object):
         self.__tonic = pitch_class
         self.__scale = scale
         self.__degrees = self.__generate_degrees(pitch_class, scale)
+
         self.__common_chords = None
+        self.__hash = None
 
     @property
     def tonic(self):
@@ -420,7 +422,9 @@ class Key(object):
         return self.tonic == other.tonic and self.scale == other.scale
 
     def __hash__(self):
-        return hash((type(self), self.tonic, self.scale))
+        if self.__hash is None:
+            self.__hash = hash((type(self), self.tonic, self.scale))
+        return self.__hash
 
     def common_chords(self):
         if self.__common_chords:
@@ -489,8 +493,12 @@ class Key(object):
         return new_key
 
     @classmethod
-    def clear_cache(self):
-        pass # FIXME
+    def clear_cache(cls):
+        """ Clears internal references to objects created with get_cached
+
+        so they can be GC'd.
+        """
+        cls.__cached_keys.clear()
 
     @staticmethod
     def __generate_degrees(tonic, scale):
@@ -540,6 +548,7 @@ class Chord(object):
         # Cached results
         self.__pitch_classes = {}
         self.__equivalence_classes = {}
+        self.__hash = None
 
     @property
     def scale_degree(self):
@@ -564,8 +573,10 @@ class Chord(object):
             self.relative == other.relative
 
     def __hash__(self):
-        return hash((type(self), self.scale_degree, self.quality,
-                     self.inversion, self.relative))
+        if self.__hash is None:
+            self.__hash = hash((type(self), self.scale_degree, self.quality,
+                                self.inversion, self.relative))
+        return self.__hash
 
     def __str__(self):
         result = ""
@@ -667,4 +678,12 @@ class Chord(object):
         new_chord = cls(*dict_key)
         cls.__cached_chords[dict_key] = new_chord
         return new_chord
+
+    @classmethod
+    def clear_cache(cls):
+        """ Clears internal references to objects created with get_cached
+
+        so they can be GC'd.
+        """
+        cls.__cached_chords.clear()
 

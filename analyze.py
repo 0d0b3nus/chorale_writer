@@ -1,9 +1,8 @@
 import os
 
-import numpy as np
 from mido import MidiFile
 
-from musictheory import PitchClass, Key, Chord
+from musictheory import Key, Chord
 
 def get_key_string(midi_file):
     meta_track = midi_file.tracks[0]
@@ -21,10 +20,12 @@ def get_tempo(midi_file):
 class ChordProgression(object):
 
     def __init__(self):
-        progression = []
+        self.progression = []
+
+    def __str__(self):
+        return ' | '.join([str(chord) for chord in self.progression])
 
     def from_midi_file(self, midi_file):
-        chords = []
         key_string = get_key_string(midi_file)
         key = Key.from_str(key_string)
 
@@ -47,11 +48,14 @@ class ChordProgression(object):
                 inversion = best_match.equivalence_classes(key).index(chunk[0])
             except ValueError:
                 inversion = 0 # Bass note is not a chord tone, assume root pos
-            chords.append(best_match)
+            scale_degree = best_match.scale_degree
+            quality = best_match.quality
+            relative = best_match.relative
+            self.progression.append(Chord.get_cached(scale_degree, quality,
+                                                     inversion, relative))
 
-        return chords
-
-    def __chunks(self, midi_file):
+    @staticmethod
+    def __chunks(midi_file):
 
         def chunkify_track(bucket, midi_track, ticks_per_beat):
             index = 0
@@ -91,38 +95,14 @@ class ChordProgression(object):
             bucket_list.append(bucket[i])
         return bucket_list
 
-class MarkovChain(object):
-
-    def __init__(self, training_data, order=1):
-        self.tokens = {} #FIXME: Use a bidict?
-        self.__train(training_data, order)
-
-    def __train(self, training_data, order):
-        num_tokens = 0
-        for token in training_data:
-            if token not in self.tokens.values():
-                self.tokens[num_tokens] = token
-                num_tokens += 1
-        print(self.tokens)
-        frequency_table = np.array([], dtype='d', ndmin=order+1)
-
-        # FIXME: Read about slice objects?
-        window_start = 0
-        window_end = order + 1
-        while window_end < len(training_data)
-
-    def generate_sequence(self, start_token=None, end_token=None):
-        pass
 
 FILES = os.listdir('corpus/')
 
 for file_ in FILES:
     if file_.endswith('.mid'):
-        print(file_)
         with MidiFile('corpus/' + file_) as midi_file:
             if len(midi_file.tracks) == 5:
                 cp = ChordProgression()
-                chords = cp.from_midi_file(midi_file)
-                print(' | '.join(map(str, chords)))
-                m = MarkovChain(chords)
+                cp.from_midi_file(midi_file)
+                print(cp)
                 break
