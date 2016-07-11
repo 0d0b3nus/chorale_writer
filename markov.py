@@ -3,71 +3,129 @@ import os
 import bidict
 import numpy as np
 
+class Start(object):
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = object.__new__(cls, *args, **kwargs)
+        return cls._instance
+
+    def __repr__(self):
+        return "Start()"
+
+
+class End(object):
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = object.__new__(cls, *args, **kwargs)
+        return cls._instance
+
+    def __repr__(self):
+        return "End()"
+
+
+class ObjectIndexedArray(object):
+
+    def __init__(self, row_indices, column_indices, dtype=np.float_):
+        self._row_indices_dict = bidict.bidict()
+        for i, object_index in enumerate(set(row_indices)):
+            self._row_indices_dict[object_index] = i
+
+        self._column_indices_dict = bidict.bidict()
+        for j, object_index in enumerate(set(column_indices)):
+            self._column_indices_dict[object_index] = j
+
+        height = len(self._row_indices_dict)
+        width = len(self._column_indices_dict)
+        self._array = np.zeros((height, width), dtype=dtype)
+
+    def debug(self):
+        height, width = self._array.shape
+        for i in range(0, height):
+            print(self._row_indices_dict.inv[i])
+        for j in range(0, width):
+            print(self._column_indices_dict.inv[j])
+        print(self._array)
+
+    def _translate_indices(self, index):
+        row_index_object, column_index_object = index
+        i = self._row_indices_dict[row_index_object]
+        j = self._column_indices_dict[column_index_object]
+        return (i, j)
+
+    def __getitem__(self, index):
+        i, j = self._translate_indices(index)
+        return self._array[i, j]
+
+    def __setitem__(self, index, value):
+        i, j = self._translate_indices(index)
+        self._array[i, j] = value
+
+    def get_row_index(self, i):
+        return self._row_indices_dict.inv[i]
+
+    def get_column_index(self, j):
+        return self._column_indices_dict.inv[j]
+
+    def sum(self):
+        return self._array.sum()
+
+    def normalize(self):
+        for i in range(0, self._array.shape[0]):
+            vector_sum = self._array[i].sum()
+            self._array[i] /= vector_sum
+
+
 class MarkovChain(object):
+    """ MarkovChain([[1, 2, 3, 2, 5], [2, 4, 5, 6, 6]])
+    """
 
     def __init__(self, training_data, order=1):
-        self.history_tuples = bidict.bidict()
-        self.states = bidict.bidict()
-        self.transition_matrix = None
+        self.order = order
+        self.transition_array = None
         self.__train(training_data, order)
 
     def __train(self, training_data, order):
-        width = self.__get_width(training_data)
-        height = self.__get_height(training_data, order)
-        frequency_matrix = np.matrix([[0] * width] * height, dtype='uint64')
+        column_indices = set()
+        row_indices = set()
 
-        num_states = 0
-        num_histories = 0
-        window_start = 0
-        window_end = order + 1
-        while window_end < len(training_data):
-            history = tuple(training_data[window_start:window_end])
-            next_state = training_data[window_end]
-            # Find which row corresponds to history
-            if history not in self.history_tuples.inv:
-                self.history_tuples[num_histories] = history
-                i = num_histories
-                num_histories += 1
-            else:
-                i = self.history_tuples.inv[history]
+        tagged_data = []
+        for sample in training_data:
+            sample = [Start()] * order + sample + [End()]
+            tagged_data.append(sample)
+            window_start = 0
+            window_end = order
+            while window_end < len(sample):
+                row_index = tuple(sample[window_start:window_end])
+                row_indices.add(row_index)
 
-            # Find which column corresponds to next state
-            if next_state not in self.states.inv:
-                self.states[num_states] = next_state
-                j = num_states
-                num_states += 1
-            else:
-                j = self.states.inv[next_state]
+                column_index = sample[window_end]
+                column_indices.add(column_index)
+                window_start += 1
+                window_end += 1
 
-            frequency_matrix[i, j] += 1
-            window_start += 1
-            window_end += 1
-        transitions = frequency_matrix.sum()
-        self.transition_matrix = np.matrix(frequency_matrix,
-                                           dtype='float64') / transitions
-        print(self.transition_matrix)
+        self.transition_array = ObjectIndexedArray(tuple(row_indices),
+                                                   tuple(column_indices))
 
-    def __get_width(self, training_data):
-        states = set()
+        for sample in tagged_data:
+            window_start = 0
+            window_end = order
+            while window_end < len(sample):
+                row_index = tuple(sample[window_start:window_end])
+                column_index = sample[window_end]
+                self.transition_array[row_index, column_index] = +1
+                window_start += 1
+                window_end += 1
 
-        for state in training_data:
-            states.add(state)
-        return len(states)
-
-    def __get_height(self, training_data, order):
-        histories = set()
-
-        window_start = 0
-        window_end = order + 1
-        while window_end < len(training_data):
-            history = tuple(training_data[window_start:window_end])
-            histories.add(history)
-            window_start += 1
-            window_end += 1
-        return len(histories)
+        self.transition_array.debug()
+        self.transition_array.normalize()
+        self.transition_array.debug()
 
     def generate_sequence(self, start_state=None, end_state=None, num_states=20):
-        sequence = []
+        sequence = [Start()] * self.order
         history = self.__generate_starting_state()
         sequence += list(history)
         states = len(history)
@@ -81,11 +139,6 @@ class MarkovChain(object):
         pass
 
     def __generate_starting_state(self, start_state=None):
-        starting_dist = np.matrix([0] * self.transition_matrix.shape[0])
-        if start_state is not None:
-            starting_states = [history in self.history_tuples.values()
-                               if history[0] == start_state]
-        else:
-            starting_states = self.history_tuples.values()
+        pass
 
-S = MarkovChain([1, 2, 3, 4, 5, 4, 5, 3, 2, 1, 2, 3], 3)
+S = MarkovChain([[1, 1, 2, 1, 3, 3, 5, 6, 4, 1, 1, 4]], 2)
