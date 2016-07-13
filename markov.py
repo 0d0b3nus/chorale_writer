@@ -3,6 +3,8 @@ import os
 import bidict
 import numpy as np
 
+import nltk
+
 class Start(object):
     _instance = None
 
@@ -38,15 +40,22 @@ class ObjectIndexedArray(object):
         for j, object_index in enumerate(set(column_indices)):
             self._column_indices_dict[object_index] = j
 
-        height = len(self._row_indices_dict)
-        width = len(self._column_indices_dict)
-        self._array = np.zeros((height, width), dtype=dtype)
+        self._height = len(self._row_indices_dict)
+        self._width = len(self._column_indices_dict)
+        self._array = np.zeros((self._height, self._width), dtype=dtype)
+
+    @property
+    def height(self):
+        return self._height
+
+    @property
+    def width(self):
+        return self._width
 
     def debug(self):
-        height, width = self._array.shape
-        for i in range(0, height):
+        for i in range(0, self.height):
             print(self._row_indices_dict.inv[i])
-        for j in range(0, width):
+        for j in range(0, self.width):
             print(self._column_indices_dict.inv[j])
         print(self._array)
 
@@ -55,6 +64,12 @@ class ObjectIndexedArray(object):
         i = self._row_indices_dict[row_index_object]
         j = self._column_indices_dict[column_index_object]
         return (i, j)
+
+    def __matmul__(self, other):
+        return self._array @ other
+
+    def __rmatmul__(self, other):
+        return other @ self._array
 
     def __getitem__(self, index):
         i, j = self._translate_indices(index)
@@ -69,6 +84,12 @@ class ObjectIndexedArray(object):
 
     def get_column_index(self, j):
         return self._column_indices_dict.inv[j]
+
+    def get_row_number(self, row_index):
+        return self._row_indices_dict[row_index]
+
+    def get_column_number(self, column_index):
+        return self._column_indices_dict[column_index]
 
     def sum(self):
         return self._array.sum()
@@ -119,26 +140,36 @@ class MarkovChain(object):
                 self.transition_array[row_index, column_index] = +1
                 window_start += 1
                 window_end += 1
-
-        self.transition_array.debug()
         self.transition_array.normalize()
-        self.transition_array.debug()
 
-    def generate_sequence(self, start_state=None, end_state=None, num_states=20):
+    def generate_sequence(self):
         sequence = [Start()] * self.order
-        history = self.__generate_starting_state()
-        sequence += list(history)
-        states = len(history)
+        history = tuple(sequence)
+        next_state = None
 
-        if end_state is not None:
-            new_state = None
-            while new_state != end_state:
-                tm = self.__transition_matrix
-                current_dist = np.matrix([0] * tm.shape[0])
-                current_dist[self.history_tuples.inv[history]] = 1
-        pass
+        while next_state is not End():
+            next_state = self.__get_next(history)
+            sequence.append(next_state)
+            history = tuple(sequence[-self.order:])
+        print(sequence)
 
-    def __generate_starting_state(self, start_state=None):
-        pass
+    def __get_next(self, history):
+        i = self.transition_array.get_row_number(history)
+        state_vector = np.zeros((1, self.transition_array.height))
+        state_vector[0, i] = 1
+        distribution = state_vector @ self.transition_array._array
+        j = np.random.choice(range(0, self.transition_array.width),
+                p=distribution[0])
+        return self.transition_array.get_column_index(j)
 
 S = MarkovChain([[1, 1, 2, 1, 3, 3, 5, 6, 4, 1, 1, 4]], 2)
+S.generate_sequence()
+
+tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
+with open("pg11.txt") as fp:
+    data = fp.read()
+s = tokenizer.tokenize(data)
+f = [x.replace('.', '').replace(',', '').replace('\n', ' ').lower().split(' ') for x in s]
+
+S = MarkovChain(f, 2)
+S.generate_sequence()

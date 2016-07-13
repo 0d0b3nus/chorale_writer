@@ -2,6 +2,7 @@ import os
 
 from mido import MidiFile
 
+from markov import MarkovChain
 from musictheory import Key, Chord
 
 def get_key_string(midi_file):
@@ -98,11 +99,24 @@ class ChordProgression(object):
 
 FILES = os.listdir('corpus/')
 
+progressions = []
 for file_ in FILES:
     if file_.endswith('.mid'):
         with MidiFile('corpus/' + file_) as midi_file:
             if len(midi_file.tracks) == 5:
                 cp = ChordProgression()
                 cp.from_midi_file(midi_file)
-                print(cp)
-                break
+                progressions.append(cp.progression)
+
+S = MarkovChain(progressions, order=2)
+S.generate_sequence()
+print('------------------------------------------------')
+S.generate_sequence()
+print('------------------------------------------------')
+S = MarkovChain(progressions, order=3)
+print('------------------------------------------------')
+print('------------------------------------------------')
+print('------------------------------------------------')
+S.generate_sequence()
+print('------------------------------------------------')
+S.generate_sequence()
