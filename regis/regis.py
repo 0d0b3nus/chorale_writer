@@ -12,6 +12,9 @@ class StartWindow(QWidget):
     def initUI(self):
         regisLabel = QLabel("<b>Regis</b>")
         regisLabel.setAlignment(PyQt5.QtCore.Qt.AlignCenter)
+        regisFont = regisLabel.font()
+        regisFont.setPointSize(20)
+        regisLabel.setFont(regisFont)
         procLabel = QLabel("Procedural Chorale Generator")
         procLabel.setAlignment(PyQt5.QtCore.Qt.AlignCenter)
 
@@ -19,7 +22,7 @@ class StartWindow(QWidget):
         exerciseButton = QPushButton("Exercise Mode")
         quitButton = QPushButton ("Quit")
 
-        exerciseButton.clicked.connect(self.close)
+        exerciseButton.clicked.connect(self.click_exercise)
         quitButton.clicked.connect(self.close)
 
         grid = QGridLayout()
@@ -33,42 +36,94 @@ class StartWindow(QWidget):
         self.setLayout(grid)
 
         self.setWindowTitle('Regis')
+        self.resize(340, 220)
         self.show()
+
+    @PyQt5.QtCore.pyqtSlot()
+    def click_exercise(self):
+        self.hide()
+        self.exercise = ExerciseWindow(self)
+        self.exercise.exec()
 
 class ExerciseWindow(QWidget):
 
-    def __init__(self):
+    def __init__(self, parent):
         super().__init__()
+        self.parent = parent
         self.initUI()
 
     def initUI(self):
         size = 5
-        grid = QGridLayout()
+        mainVBox = QVBoxLayout()
+        sheet = QLabel('SHEET MUSIC HERE')
+        mainVBox.addWidget(sheet)
 
         labels = [''] * size
         dropdowns = [''] * size
         checks = [''] * size
+        hboxes = [''] * size
+        dropdownsVBox = QVBoxLayout()
+        mainVBox.addLayout(dropdownsVBox)
         for i in range(size):
-            labels[i] = QLabel("{}".format(i+1))
-            grid.addWidget(labels[i], i+1, 0)
+            hboxes[i] = QHBoxLayout()
+            labels[i] = QLabel("<b>{}</b>".format(i+1))
+            labels[i].setFixedWidth(10)
+            labels[i].setAlignment(PyQt5.QtCore.Qt.AlignRight | PyQt5.QtCore.Qt.AlignVCenter)
+            hboxes[i].addWidget(labels[i])
             dropdowns[i] = QComboBox(self)
-            grid.addWidget(dropdowns[i], i+1, 2)
+            hboxes[i].addWidget(dropdowns[i])
+            checks[i] = QLabel('C')
+            hboxes[i].addWidget(checks[i])
+            dropdownsVBox.addLayout(hboxes[i])
 
+        buttonsHBox = QHBoxLayout()
         gradeButton = QPushButton('Grade')
-        grid.addWidget(gradeButton, i+size+1, 0)
+        buttonsHBox.addWidget(gradeButton)
         newButton = QPushButton('New')
-        grid.addWidget(newButton, i+size+1, 2)
+        buttonsHBox.addWidget(newButton)
         backButton = QPushButton('Back')
-        grid.addWidget(backButton, i+size+1, 4)
+        buttonsHBox.addWidget(backButton)
+        backButton.clicked.connect(self.click_back)
+        mainVBox.addLayout(buttonsHBox)
 
-        self.setLayout(grid)
-
+        self.setLayout(mainVBox)
         self.setWindowTitle('Regis: Exercise Mode')
         self.show()
 
+    def click_back(self):
+        self.hide()
+        self.parent.show()
+
+class NewChoraleWindow(QWidget):
+
+    def __init__(self, parent):
+        super().__init__()
+        self.parent = parent
+        self.initUI()
+
+    def initUI(self):
+        vbox = QVBoxLayout()
+        sheet = QLabel('SHEET MUSIC HERE')
+        vbox.addWidget(sheet)
+
+        hbox = QHBoxLayout()
+        newButton = QPushButton('New')
+        playButton = QPushButton('Play')
+        stopButton = QPushButton('Stop')
+        saveButton = QPushButton('Save')
+        backButton = QPushButton('Back')
+        hbox.addWidget(newButton)
+        hbox.addWidget(playButton)
+        hbox.addWidget(stopButton)
+        hbox.addWidget(saveButton)
+        hbox.addWidget(backButton)
+        vbox.addLayout(hbox)
+
+        self.setLayout(vbox)
+        self.setWindowTitle('Regis: New Chorale')
+        self.show()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = StartWindow()
-    exs = ExerciseWindow()
     sys.exit(app.exec())
