@@ -1,8 +1,9 @@
+from collections import defaultdict
+import heapq
 import os
 
 from mido import MidiFile
 
-from markov import MarkovChain
 from musictheory import Key, Chord
 
 def get_key_string(midi_file):
@@ -99,24 +100,83 @@ class ChordProgression(object):
 
 FILES = os.listdir('corpus/')
 
-progressions = []
+major_key_progressions = []
+minor_key_progressions = []
+
 for file_ in FILES:
     if file_.endswith('.mid'):
         with MidiFile('corpus/' + file_) as midi_file:
             if len(midi_file.tracks) == 5:
+                if get_key_string(midi_file).endswith('m'):
+                    progressions = minor_key_progressions
+                else:
+                    progressions = major_key_progressions
                 cp = ChordProgression()
                 cp.from_midi_file(midi_file)
                 progressions.append(cp.progression)
 
-S = MarkovChain(progressions, order=2)
-S.generate_sequence()
-print('------------------------------------------------')
-S.generate_sequence()
-print('------------------------------------------------')
-S = MarkovChain(progressions, order=3)
-print('------------------------------------------------')
-print('------------------------------------------------')
-print('------------------------------------------------')
-S.generate_sequence()
-print('------------------------------------------------')
-S.generate_sequence()
+
+def generate_transition_matrix(progressions):
+    histogram = defaultdict(int)
+    transition_matrix = defaultdict(int)
+
+    for progression in progressions:
+        for i in range(0, len(progression) - 1):
+            from_chord, to_chord = progression[i:i+2]
+            histogram[from_chord] += 1
+            transition_matrix[(from_chord, to_chord)] += 1
+
+    return (histogram, transition_matrix)
+
+def get_n_most_common(dictionary, n):
+    values = list(dictionary.values())
+    largest = heapq.nlargest(n, values)
+    keys = list(dictionary.keys())
+    return [keys[values.index(m)] for m in largest]
+
+def get_trimmed_transition(histogram, transition_matrix, n):
+    new_matrix = defaultdict(int)
+
+    chords = get_n_most_common(histogram, n)
+    for from_chord in chords:
+        for to_chord in chords:
+            if from_chord == to_chord:
+                continue
+            new_matrix[(from_chord, to_chord)] = \
+                    transition_matrix[(from_chord, to_chord)]
+    return new_matrix
+
+def get_max(dictionary):
+    if not dictionary:
+        return None
+    else:
+        current_max = dictionary.values[0]
+
+    for value in dictionary.values():
+        current_max = value if value > current_max else current_max
+    return current_max
+
+def write_graphviz(progressions, filename):
+    histogram, transition_matrix = generate_transition_matrix(progressions)
+    trimmed = get_trimmed_transition(histogram, transition_matrix, 11)
+    chords = get_n_most_common(histogram, 11)
+    max_ = get_max(trimmed)
+    w = 4.0 / max_
+
+    with open(filename, 'w') as fp:
+        fp.write('digraph G {\n')
+        for from_ in chords:
+            for to in chords:
+                if trimmed[(from_, to)] == 0:
+                    continue
+                weight = w * trimmed[(from_, to)]
+                from_str = str(from_).encode('ascii', 'xmlcharrefreplace')
+                from_str = from_str.decode('utf-8')
+                to_str = str(to).encode('ascii', 'xmlcharrefreplace')
+                to_str = to_str.decode('utf-8')
+                format_str = '    \"{0}\" -> \"{1}\"[penwidth={2:3}];\n'
+                fp.write(format_str.format(from_str, to_str, weight))
+        fp.write('}')
+
+write_graphviz(major_key_progressions, 'major.dot')
+write_graphviz(minor_key_progressions, 'minor.dot')
