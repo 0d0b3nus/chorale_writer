@@ -1,4 +1,4 @@
-""" Utility functions for Marvin. """
+""" Utility functions for regis """
 
 from collections import OrderedDict
 
