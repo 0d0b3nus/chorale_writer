@@ -1,10 +1,11 @@
 Regis
 --------
 
-To use
+musictheory.py
+~~~~~~~~~~~~~
+musictheory.py contains a music theory library.
 
-Section 1
+analyze.py
 ~~~~~~~~~~~~~
 
-Section 1
-~~~~~~~~~~~~~
+analyze.py is the chorale harmonic analysis tool.
